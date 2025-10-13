@@ -161,12 +161,13 @@ with col2:
 
 st.markdown("---")
 
-# --- Row 2: Sport Pie Chart ---
-fig_sport, ax_sport = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
+# --- Row 2: Sport Pie Chart (smaller) ---
+fig_sport, ax_sport = plt.subplots(figsize=(3.5, 2.2))
 sport_counts = filtered_df["Sport"].value_counts()
 ax_sport.pie(sport_counts, labels=sport_counts.index, autopct="%1.1f%%", colors=sns.color_palette("Set2"), startangle=90)
 ax_sport.set_title("Sport Distribution")
 fig_sport.tight_layout()
 st.subheader("🏅 Sport Distribution")
 st.pyplot(fig_sport)
+
 
