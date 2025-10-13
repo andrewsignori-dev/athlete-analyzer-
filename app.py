@@ -8,7 +8,7 @@ import numpy as np
 # ---------------------------
 # Page Configuration
 # ---------------------------
-st.set_page_config(page_title="Athlete Dashboard", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Athlete Ability Distribution", layout="wide", initial_sidebar_state="expanded")
 
 # Load dataset
 df = pd.read_excel("synthetic_athlete_dataset.xlsx")
@@ -24,7 +24,7 @@ df_scaled[abilities] = scaler.fit_transform(df[abilities])
 # ---------------------------
 # Sidebar Filters
 # ---------------------------
-st.sidebar.title("⚡ Athlete Dashboard")
+st.sidebar.title("⚡ Athlete Dashboard Filters")
 page = st.sidebar.radio("Navigate to", ["Dashboard", "Raw Data"])
 
 st.sidebar.header("Filter Athletes")
@@ -59,7 +59,7 @@ fig_height = 4.5
 # ---------------------------
 if page == "Dashboard":
     st.title("🏋️ Athlete Abilities Dashboard")
-    st.markdown("Explore standardized abilities of athletes. Z-scores show performance relative to the group.")
+    st.markdown("Explore standardized abilities of athletes")
     st.markdown("---")
 
     # --- Row 1: Bar & Box ---
