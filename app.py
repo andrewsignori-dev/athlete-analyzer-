@@ -49,10 +49,11 @@ filtered_df = filtered_df[(filtered_df["Age"] >= selected_age[0]) & (filtered_df
 sns.set_theme(style="whitegrid")
 
 # ---------------------------
-# Figure Sizes
+# Small Figure Sizes
 # ---------------------------
-fig_width = 7
-fig_height = 4.5
+fig_width = 4.5
+fig_height = 3
+font_size = 4
 
 # ---------------------------
 # Athlete Ability Page
@@ -72,10 +73,12 @@ if page == "Athlete Ability":
         fig_bar, ax_bar = plt.subplots(figsize=(fig_width, fig_height))
         sns.barplot(x=avg_values.index, y=avg_values.values, palette=colors, ax=ax_bar)
         ax_bar.axhline(0, color="black", linestyle="--")
-        ax_bar.set_ylabel("Z-score")
-        ax_bar.set_xlabel("Ability")
+        ax_bar.set_ylabel("Z-score", fontsize=font_size)
+        ax_bar.set_xlabel("Ability", fontsize=font_size)
+        ax_bar.tick_params(axis='x', labelsize=font_size-1)
+        ax_bar.tick_params(axis='y', labelsize=font_size-1)
         fig_bar.tight_layout()
-        st.subheader("📊 Average Abilities")
+        st.subheader("📊 Average Abilities", anchor=None)
         st.pyplot(fig_bar)
 
     # Box Plot
@@ -84,6 +87,8 @@ if page == "Athlete Ability":
         fig_box, ax_box = plt.subplots(figsize=(fig_width, fig_height))
         sns.boxplot(x="Ability", y="Z-Score", data=melted, palette="coolwarm", ax=ax_box)
         ax_box.axhline(0, color="black", linestyle="--")
+        ax_box.tick_params(axis='x', labelsize=font_size-1)
+        ax_box.tick_params(axis='y', labelsize=font_size-1)
         fig_box.tight_layout()
         st.subheader("📦 Ability Distribution")
         st.pyplot(fig_box)
@@ -101,11 +106,11 @@ if page == "Athlete Ability":
         avg_values_loop = np.concatenate((avg_values_radar, [avg_values_radar[0]]))
         angles_loop = angles + angles[:1]
         fig_radar, ax_radar = plt.subplots(figsize=(fig_width, fig_height), subplot_kw=dict(polar=True))
-        ax_radar.plot(angles_loop, avg_values_loop, color="blue", linewidth=2)
+        ax_radar.plot(angles_loop, avg_values_loop, color="blue", linewidth=1.5)
         ax_radar.fill(angles_loop, avg_values_loop, color="skyblue", alpha=0.25)
         ax_radar.set_xticks(angles)
-        ax_radar.set_xticklabels(abilities)
-        ax_radar.set_yticklabels(np.round(ax_radar.get_yticks(), 2))
+        ax_radar.set_xticklabels(abilities, fontsize=font_size-1)
+        ax_radar.set_yticklabels(np.round(ax_radar.get_yticks(), 2), fontsize=font_size-1)
         ax_radar.axhline(0, color="grey", linestyle="--")
         fig_radar.tight_layout()
         st.subheader("📡 Overall Ability Profile")
@@ -115,8 +120,8 @@ if page == "Athlete Ability":
     with col2:
         corr = filtered_df[abilities].corr()
         fig_corr, ax_corr = plt.subplots(figsize=(fig_width, fig_height))
-        sns.heatmap(corr, annot=True, cmap="coolwarm", linewidths=0.5, ax=ax_corr)
-        ax_corr.set_title("Correlation Between Abilities")
+        sns.heatmap(corr, annot=True, cmap="coolwarm", linewidths=0.5, ax=ax_corr, annot_kws={"size": font_size-2})
+        ax_corr.set_title("Correlation Between Abilities", fontsize=font_size)
         fig_corr.tight_layout()
         st.subheader("🔥 Ability Correlations")
         st.pyplot(fig_corr)
@@ -175,33 +180,37 @@ if page == "Athlete Ability":
 
     # --- Comparison Bar Chart ---
     st.subheader("📊 Comparison to Reference Average")
-    fig_bar_eval, ax_bar_eval = plt.subplots(figsize=(4, 2))
+    fig_bar_eval, ax_bar_eval = plt.subplots(figsize=(3.5, 2))
     x = np.arange(len(abilities))
     width = 0.35
     ax_bar_eval.bar(x - width/2, avg_values_ref, width, label=legend_label, color='#888888')
     ax_bar_eval.bar(x + width/2, new_values, width, label='New Athlete', color='#1f77b4')
     ax_bar_eval.axhline(0, color="black", linestyle="--")
     ax_bar_eval.set_xticks(x)
-    ax_bar_eval.set_xticklabels(abilities, fontsize=12)
-    ax_bar_eval.set_ylabel("Z-score", fontsize=12)
-    ax_bar_eval.legend(fontsize=12)
+    ax_bar_eval.set_xticklabels(abilities, fontsize=font_size-1)
+    ax_bar_eval.set_ylabel("Z-score", fontsize=font_size)
+    ax_bar_eval.tick_params(axis='y', labelsize=font_size-1)
+    ax_bar_eval.legend(fontsize=font_size-1)
     fig_bar_eval.tight_layout()
     st.pyplot(fig_bar_eval)
 
     # --- Boxplot overlay with new athlete point ---
     st.subheader("📡 Percentile Placement")
-    fig_box_overlay, ax_box_overlay = plt.subplots(figsize=(4, 2))
+    fig_box_overlay, ax_box_overlay = plt.subplots(figsize=(3.5, 2))
     melted_ref = ref_df.melt(id_vars=["AthleteID"], value_vars=abilities, var_name="Ability", value_name="Z-Score")
     sns.boxplot(x="Ability", y="Z-Score", data=melted_ref, palette="coolwarm", ax=ax_box_overlay)
     ax_box_overlay.axhline(0, color="black", linestyle="--")
+    ax_box_overlay.tick_params(axis='x', labelsize=font_size-1)
+    ax_box_overlay.tick_params(axis='y', labelsize=font_size-1)
 
     # Overlay new athlete points
     for i, ability in enumerate(abilities):
-        ax_box_overlay.scatter(i, new_values[ability], color="#1f77b4", s=100, zorder=10,
+        ax_box_overlay.scatter(i, new_values[ability], color="#1f77b4", s=50, zorder=10,
                                label="New Athlete" if i == 0 else "")
-    ax_box_overlay.legend(fontsize=12)
+    ax_box_overlay.legend(fontsize=font_size-1)
     fig_box_overlay.tight_layout()
     st.pyplot(fig_box_overlay)
+
 
 # ---------------------------
 # Raw Data Page
