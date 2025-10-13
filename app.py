@@ -36,10 +36,35 @@ def archetypal_analysis(X, n_archetypes=3, n_iter=100):
 
     return archetypes, alphas
 
+# Compute archetypes
 n_archetypes = 3
 archetypes_scaled, _ = archetypal_analysis(X, n_archetypes=n_archetypes)
 archetypes = scaler.inverse_transform(archetypes_scaled)
-archetype_labels = [f"Archetype_{i+1}" for i in range(n_archetypes)]
+
+# Define descriptive names based on dominant ability
+feature_names = ['Speed', 'Endurance', 'Strength', 'Agility', 'ReactionTime']
+descriptive_labels = []
+for i, arch in enumerate(archetypes):
+    dominant_trait_idx = np.argmax(arch)
+    dominant_trait = feature_names[dominant_trait_idx]
+
+    # Assign descriptive, ability-focused names
+    if dominant_trait == "Speed":
+        label = "Speed Archetype"
+    elif dominant_trait == "Endurance":
+        label = "Endurance Archetype"
+    elif dominant_trait == "Strength":
+        label = "Strength Archetype"
+    elif dominant_trait == "Agility":
+        label = "Agility Archetype"
+    elif dominant_trait == "ReactionTime":
+        label = "Reaction Archetype"
+    else:
+        label = f"Archetype_{i+1}"
+
+    descriptive_labels.append(label)
+
+archetype_labels = descriptive_labels
 
 # ---------------------------
 # 4. Streamlit interface
