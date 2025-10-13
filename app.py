@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler
 # ---------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_excel("synthetic_athlete_dataset_realistic.xlsx")
+    df = pd.read_excel("synthetic_athlete_dataset.xlsx")
     return df
 
 df_athletes = load_data()
