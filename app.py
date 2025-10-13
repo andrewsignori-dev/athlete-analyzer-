@@ -53,7 +53,7 @@ sns.set_theme(style="whitegrid")
 # ---------------------------
 fig_width = 4.5
 fig_height = 3
-font_size = 4
+font_size = 6
 
 # ---------------------------
 # Athlete Ability Page
