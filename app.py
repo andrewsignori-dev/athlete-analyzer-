@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
+from scipy.optimize import minimize
 
 # ---------------------------
 # 1. Load dataset
@@ -13,9 +14,8 @@ from sklearn.preprocessing import StandardScaler
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_excel("synthetic_athlete_dataset.xlsx")
+        df = pd.read_excel("synthetic_athlete_dataset_realistic.xlsx")
     except FileNotFoundError:
-        # Fallback: simulate small dataset
         np.random.seed(42)
         n_athletes = 50
         df = pd.DataFrame({
@@ -48,10 +48,10 @@ def archetypal_analysis(X, n_archetypes=3, n_iter=100):
         alphas = np.clip(alphas, 0, 1)
         alphas = alphas / (alphas.sum(axis=1, keepdims=True) + 1e-8)
         archetypes = (alphas.T @ X) / (alphas.sum(axis=0)[:, None] + 1e-8)
-    return archetypes, alphas
+    return archetypes
 
 n_archetypes = 3
-archetypes_scaled, _ = archetypal_analysis(X, n_archetypes=n_archetypes)
+archetypes_scaled = archetypal_analysis(X, n_archetypes=n_archetypes)
 archetypes = scaler.inverse_transform(archetypes_scaled)
 
 # ---------------------------
@@ -68,7 +68,7 @@ for arch in archetypes:
         candidate_label = f"{feature_names[idx]} Archetype"
         if candidate_label not in used_labels:
             label = candidate_label
-            used_labels.add(label)
+            used_labels.add(candidate_label)
             break
     if label is None:
         label = f"Archetype_{len(used_labels)+1}"
@@ -76,13 +76,32 @@ for arch in archetypes:
     archetype_labels.append(label)
 
 # ---------------------------
-# 5. Streamlit Interface
+# 5. Function to compute alphas robustly
+# ---------------------------
+def compute_alphas(archetypes_scaled, x_scaled):
+    n = archetypes_scaled.shape[0]
+
+    def objective(alpha):
+        recon = alpha @ archetypes_scaled
+        return np.sum((x_scaled - recon) ** 2)
+
+    cons = ({'type': 'eq', 'fun': lambda alpha: np.sum(alpha) - 1})
+    bounds = [(0,1) for _ in range(n)]
+    res = minimize(objective, x0=np.ones(n)/n, bounds=bounds, constraints=cons)
+    if res.success:
+        return res.x
+    else:
+        # fallback uniform distribution
+        return np.ones(n)/n
+
+# ---------------------------
+# 6. Streamlit Interface
 # ---------------------------
 st.set_page_config(page_title="Athlete Typology Analyzer", page_icon="🏃‍♂️", layout="centered")
 st.title("🏋️ Athlete Typology Analyzer")
-st.markdown("Enter athlete performance metrics to see your archetype composition and dominant traits.")
+st.markdown("Enter athlete metrics to see your **archetype composition** and **dominant traits**.")
 
-# Input sidebar
+# Sidebar inputs
 st.sidebar.header("Input Athlete Metrics")
 speed = st.sidebar.number_input("Speed", value=25.0, min_value=10.0, max_value=40.0, step=0.1)
 endurance = st.sidebar.number_input("Endurance", value=70.0, min_value=30.0, max_value=100.0, step=0.1)
@@ -94,17 +113,11 @@ if st.sidebar.button("Analyze"):
     x_input = np.array([[speed, endurance, strength, agility, reaction_time]])
     x_scaled = scaler.transform(x_input)
 
-    # Compute alphas
-    alphas = np.linalg.lstsq(archetypes_scaled.T, x_scaled.T, rcond=None)[0].T
-    alphas = np.clip(alphas, 0, 1)
-    alphas = alphas / (alphas.sum(axis=1, keepdims=True) + 1e-8)
-    alpha_percent = (alphas[0] * 100).round(2)
+    # Compute alphas using optimization
+    alphas = compute_alphas(archetypes_scaled, x_scaled[0])
+    alpha_percent = (alphas * 100).round(2)
 
-    # Safety: avoid all zeros
-    if alpha_percent.sum() == 0:
-        alpha_percent = np.array([33.3, 33.3, 33.4])
-
-    # Normalize to sum 100
+    # Safety: minimum wedge size
     alpha_percent = np.maximum(alpha_percent, 0.1)
     alpha_percent = alpha_percent / alpha_percent.sum() * 100
 
@@ -132,3 +145,4 @@ if st.sidebar.button("Analyze"):
 
     st.markdown("---")
     st.markdown("*Computed using archetypal analysis on standardized athlete metrics.*")
+
