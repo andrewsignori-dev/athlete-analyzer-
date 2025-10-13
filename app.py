@@ -202,6 +202,7 @@ if page == "Athlete Ability":
     ax_box_overlay.axhline(0, color="black", linestyle="--")
     ax_box_overlay.tick_params(axis='x', labelsize=font_size)
     ax_box_overlay.tick_params(axis='y', labelsize=font_size)
+    ax_box_overlay.set_ylabel("Z-score", fontsize=font_size)
 
     # Overlay new athlete points
     for i, ability in enumerate(abilities):
