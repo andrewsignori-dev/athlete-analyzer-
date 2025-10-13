@@ -8,7 +8,7 @@ import numpy as np
 # Load dataset
 df = pd.read_excel("synthetic_athlete_dataset.xlsx")
 
-# List of ability columns
+# List of abilities
 abilities = ["Speed", "Endurance", "Strength", "Agility", "ReactionTime"]
 
 # Standardize abilities
@@ -16,10 +16,11 @@ scaler = StandardScaler()
 df_scaled = df.copy()
 df_scaled[abilities] = scaler.fit_transform(df[abilities])
 
-# App title
-st.title("Athlete Abilities Dashboard (Standardized)")
+# Sidebar page selection
+st.sidebar.title("Navigation")
+page = st.sidebar.radio("Go to", ["Dashboard", "Raw Data"])
 
-# Sidebar filters
+# Sidebar filters (common)
 st.sidebar.header("Filter Athletes")
 gender_options = ["All"] + df_scaled["Gender"].unique().tolist()
 selected_gender = st.sidebar.selectbox("Select Gender", gender_options)
@@ -30,7 +31,7 @@ selected_sport = st.sidebar.selectbox("Select Sport", sport_options)
 min_age, max_age = int(df_scaled["Age"].min()), int(df_scaled["Age"].max())
 selected_age = st.sidebar.slider("Select Age Range", min_age, max_age, (min_age, max_age))
 
-# Filter dataframe
+# Apply filters
 filtered_df = df_scaled.copy()
 if selected_gender != "All":
     filtered_df = filtered_df[filtered_df["Gender"] == selected_gender]
@@ -38,82 +39,88 @@ if selected_sport != "All":
     filtered_df = filtered_df[filtered_df["Sport"] == selected_sport]
 filtered_df = filtered_df[(filtered_df["Age"] >= selected_age[0]) & (filtered_df["Age"] <= selected_age[1])]
 
-# Show filtered data
-st.subheader("Filtered Data")
-st.dataframe(filtered_df)
-
 # ---------------------------
-# 1. Bar plot: average abilities
+# Page 1: Dashboard (plots)
 # ---------------------------
-st.subheader("Average Standardized Abilities")
-st.write("This bar plot shows the average performance of the selected athletes in each ability. "
-         "Green bars indicate above-average abilities, red bars indicate below-average abilities (relative to all athletes).")
+if page == "Dashboard":
+    st.title("Athlete Abilities Dashboard (Standardized)")
 
-avg_values = filtered_df[abilities].mean()
-colors = ["#2ca02c" if v >= 0 else "#d62728" for v in avg_values]
+    # 1. Bar plot
+    avg_values = filtered_df[abilities].mean()
+    colors = ["#2ca02c" if v >= 0 else "#d62728" for v in avg_values]
+    fig_bar, ax_bar = plt.subplots()
+    sns.barplot(x=avg_values.index, y=avg_values.values, palette=colors, ax=ax_bar)
+    ax_bar.axhline(0, color="black", linestyle="--")
+    ax_bar.set_ylabel("Z-score")
+    fig_bar.tight_layout()
 
-fig, ax = plt.subplots()
-sns.barplot(x=avg_values.index, y=avg_values.values, palette=colors, ax=ax)
-ax.axhline(0, color="black", linestyle="--")
-ax.set_ylabel("Standardized Score (Z-score)")
-st.pyplot(fig)
+    # 2. Box plot
+    melted = filtered_df.melt(id_vars=["AthleteID"], value_vars=abilities, var_name="Ability", value_name="Z-Score")
+    fig_box, ax_box = plt.subplots()
+    sns.boxplot(x="Ability", y="Z-Score", data=melted, palette="coolwarm", ax=ax_box)
+    ax_box.axhline(0, color="black", linestyle="--")
+    fig_box.tight_layout()
 
-# ---------------------------
-# 2. Box plot: distribution of abilities
-# ---------------------------
-st.subheader("Distribution of Abilities")
-st.write("This box plot shows the distribution of standardized scores for each ability. "
-         "The horizontal line at 0 represents the overall average.")
-
-melted = filtered_df.melt(id_vars=["AthleteID"], value_vars=abilities, var_name="Ability", value_name="Z-Score")
-fig, ax = plt.subplots()
-sns.boxplot(x="Ability", y="Z-Score", data=melted, palette="coolwarm", ax=ax)
-ax.axhline(0, color="black", linestyle="--")
-st.pyplot(fig)
-
-# ---------------------------
-# 3. Pie chart: gender distribution
-# ---------------------------
-st.subheader("Gender Distribution")
-st.write("This pie chart shows the proportion of male and female athletes in the selected dataset.")
-
-if "Gender" in filtered_df.columns:
+    # 3. Pie chart
     counts = filtered_df["Gender"].value_counts()
-    fig, ax = plt.subplots()
-    ax.pie(counts, labels=counts.index, autopct="%1.1f%%", colors=sns.color_palette("Set2"))
-    st.pyplot(fig)
+    fig_pie, ax_pie = plt.subplots()
+    ax_pie.pie(counts, labels=counts.index, autopct="%1.1f%%", colors=sns.color_palette("Set2"))
+    fig_pie.tight_layout()
+
+    # 4. Heatmap
+    corr = filtered_df[abilities].corr()
+    fig_corr, ax_corr = plt.subplots()
+    sns.heatmap(corr, annot=True, cmap="coolwarm", ax=ax_corr)
+    fig_corr.tight_layout()
+
+    # 5. Radar chart
+    avg_values_radar = filtered_df[abilities].mean().values
+    num_vars = len(abilities)
+    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+    avg_values_loop = np.concatenate((avg_values_radar, [avg_values_radar[0]]))
+    angles_loop = angles + angles[:1]
+
+    fig_radar, ax_radar = plt.subplots(figsize=(5,5), subplot_kw=dict(polar=True))
+    ax_radar.plot(angles_loop, avg_values_loop, color="blue", linewidth=2)
+    ax_radar.fill(angles_loop, avg_values_loop, color="skyblue", alpha=0.25)
+    ax_radar.set_xticks(angles)
+    ax_radar.set_xticklabels(abilities)
+    ax_radar.axhline(0, color="grey", linestyle="--")
+    fig_radar.tight_layout()
+
+    # Display plots in grid
+    st.subheader("Visualizations")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.pyplot(fig_bar)
+        st.write("**Bar Plot:** Average abilities. Green = above avg, Red = below avg.")
+
+    with col2:
+        st.pyplot(fig_box)
+        st.write("**Box Plot:** Distribution of abilities, 0 = overall avg.")
+
+    with col3:
+        st.pyplot(fig_pie)
+        st.write("**Pie Chart:** Gender distribution.")
+
+    col4, col5, col6 = st.columns(3)
+    with col4:
+        st.pyplot(fig_corr)
+        st.write("**Heatmap:** Correlation between abilities.")
+
+    with col5:
+        st.pyplot(fig_radar)
+        st.write("**Radar Chart:** Overall ability profile.")
+
+    with col6:
+        st.write("Optional: Add more visualizations here.")
 
 # ---------------------------
-# 4. Correlation heatmap
+# Page 2: Raw Data
 # ---------------------------
-st.subheader("Correlation Between Abilities")
-st.write("This heatmap shows how each ability correlates with the others. "
-         "Values close to 1 or -1 indicate strong positive or negative correlation, respectively.")
+elif page == "Raw Data":
+    st.title("Raw Athlete Data")
+    st.write("You can filter the raw data using the sidebar filters.")
 
-corr = filtered_df[abilities].corr()
-fig, ax = plt.subplots()
-sns.heatmap(corr, annot=True, cmap="coolwarm", ax=ax)
-st.pyplot(fig)
-
-# ---------------------------
-# 5. Radar chart: overall ability profile
-# ---------------------------
-st.subheader("Radar Chart: Overall Ability Profile")
-st.write("The radar chart shows the average standardized abilities for the selected athletes in a single view. "
-         "Abilities above 0 are above average, below 0 are below average.")
-
-avg_values = filtered_df[abilities].mean().values
-labels = abilities
-num_vars = len(labels)
-
-angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
-avg_values_loop = np.concatenate((avg_values, [avg_values[0]]))
-angles_loop = angles + angles[:1]
-
-fig, ax = plt.subplots(figsize=(6,6), subplot_kw=dict(polar=True))
-ax.plot(angles_loop, avg_values_loop, color="blue", linewidth=2)
-ax.fill(angles_loop, avg_values_loop, color="skyblue", alpha=0.25)
-ax.set_xticks(angles)
-ax.set_xticklabels(labels)
-ax.axhline(0, color="grey", linestyle="--")
-st.pyplot(fig)
+    # Show filtered raw table
+    st.dataframe(filtered_df)
