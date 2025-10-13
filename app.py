@@ -151,25 +151,16 @@ with col1:
     st.subheader("🥧 Gender Distribution")
     st.pyplot(fig_pie)
 
-# Age Bar Plot with KDE
+# Age Bar Plot
 with col2:
     fig_age, ax_age = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
-    
-    # Ensure Age is numeric and drop NaNs
-    age_data = pd.to_numeric(filtered_df["Age"], errors='coerce').dropna()
-    
-    # Histogram
-    sns.histplot(age_data, bins=10, color="#1f77b4", ax=ax_age, stat="count")
-    
-    # KDE line
-    sns.kdeplot(age_data, ax=ax_age, color="red", linewidth=2)
-    
+    sns.histplot(filtered_df["Age"], bins=10, kde=False, color="#1f77b4", ax=ax_age)
     ax_age.set_xlabel("Age")
     ax_age.set_ylabel("Count")
+    ax_age.set_title("Age Distribution")
     fig_age.tight_layout()
     st.subheader("📊 Age Distribution")
     st.pyplot(fig_age)
-
 
 st.markdown("---")
 
