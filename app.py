@@ -152,7 +152,7 @@ elif page == "Raw Data":
         st.pyplot(fig_pie)
 
 # Age Bar Plot
-   with col2:
+    with col2:
        fig_age, ax_age = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
        sns.histplot(filtered_df["Age"], bins=10, kde=False, color="#1f77b4", ax=ax_age)
        ax_age.set_xlabel("Age")
@@ -165,8 +165,8 @@ elif page == "Raw Data":
    st.markdown("---")
 
    # --- Row 2: Sport Pie Chart aligned with first row ---
-   col1, col2 = st.columns([1, 1])  # two equal columns
-   with col1:
+    col1, col2 = st.columns([1, 1])  # two equal columns
+    with col1:
        fig_sport, ax_sport = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
        sport_counts = filtered_df["Sport"].value_counts()
        ax_sport.pie(sport_counts, labels=sport_counts.index, autopct="%1.1f%%",
