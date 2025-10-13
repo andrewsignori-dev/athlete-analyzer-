@@ -129,7 +129,7 @@ elif page == "Raw Data":
     st.write("You can filter the raw data using the sidebar filters below.")
 
      # Show table
-    st.dataframe(filtered_df)
+    st.dataframe(df)
 
 # Smaller figure size for Raw Data plots (uniform)
 fig_width_raw = 4
