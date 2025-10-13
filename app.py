@@ -154,12 +154,22 @@ with col1:
 # Age Bar Plot with KDE
 with col2:
     fig_age, ax_age = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
-    sns.histplot(filtered_df["Age"], bins=10, kde=True, color="#1f77b4", ax=ax_age, stat="count", kde_kws={"color": "red", "linewidth": 2})
+    
+    # Ensure Age is numeric and drop NaNs
+    age_data = pd.to_numeric(filtered_df["Age"], errors='coerce').dropna()
+    
+    # Histogram
+    sns.histplot(age_data, bins=10, color="#1f77b4", ax=ax_age, stat="count")
+    
+    # KDE line
+    sns.kdeplot(age_data, ax=ax_age, color="red", linewidth=2)
+    
     ax_age.set_xlabel("Age")
     ax_age.set_ylabel("Count")
     fig_age.tight_layout()
-    st.subheader("📊 Age Distribution with KDE")
+    st.subheader("📊 Age Distribution")
     st.pyplot(fig_age)
+
 
 st.markdown("---")
 
