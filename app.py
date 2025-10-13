@@ -146,7 +146,7 @@ with col1:
     ax_pie.pie(counts, labels=counts.index, autopct="%1.1f%%",
                colors=sns.color_palette("Set2"), startangle=90,
                textprops={'fontsize': label_fontsize})
-    ax_pie.set_title("Gender Distribution", fontsize=12)
+    #ax_pie.set_title("Gender Distribution", fontsize=12)
     fig_pie.tight_layout()
     st.subheader("🥧 Gender Distribution")
     st.pyplot(fig_pie)
@@ -157,7 +157,7 @@ with col2:
     sns.histplot(filtered_df["Age"], bins=10, kde=False, color="#1f77b4", ax=ax_age)
     ax_age.set_xlabel("Age")
     ax_age.set_ylabel("Count")
-    ax_age.set_title("Age Distribution")
+    #ax_age.set_title("Age Distribution")
     fig_age.tight_layout()
     st.subheader("📊 Age Distribution")
     st.pyplot(fig_age)
@@ -172,7 +172,7 @@ with col1:
     ax_sport.pie(sport_counts, labels=sport_counts.index, autopct="%1.1f%%",
                  colors=sns.color_palette("Set2"), startangle=90,
                  textprops={'fontsize': label_fontsize})
-    ax_sport.set_title("Sport Distribution", fontsize=12)
+    #ax_sport.set_title("Sport Distribution", fontsize=12)
     fig_sport.tight_layout()
     st.subheader("🏅 Sport Distribution")
     st.pyplot(fig_sport)
