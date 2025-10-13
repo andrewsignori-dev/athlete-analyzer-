@@ -134,7 +134,7 @@ elif page == "Raw Data":
 # Smaller figure size for Raw Data plots
 fig_width_raw = 4
 fig_height_raw = 2.5
-label_fontsize = 10  # smaller labels
+label_fontsize = 5  # smaller labels
 
 # --- Row 1: Gender Pie & Age Bar ---
 col1, col2 = st.columns(2)
