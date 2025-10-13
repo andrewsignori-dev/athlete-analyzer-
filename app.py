@@ -41,30 +41,34 @@ n_archetypes = 3
 archetypes_scaled, _ = archetypal_analysis(X, n_archetypes=n_archetypes)
 archetypes = scaler.inverse_transform(archetypes_scaled)
 
-# Define descriptive names based on dominant ability
+# Feature names
 feature_names = ['Speed', 'Endurance', 'Strength', 'Agility', 'ReactionTime']
-descriptive_labels = []
-for i, arch in enumerate(archetypes):
-    dominant_trait_idx = np.argmax(arch)
-    dominant_trait = feature_names[dominant_trait_idx]
 
-    # Assign descriptive, ability-focused names
-    if dominant_trait == "Speed":
-        label = "Speed Archetype"
-    elif dominant_trait == "Endurance":
-        label = "Endurance Archetype"
-    elif dominant_trait == "Strength":
-        label = "Strength Archetype"
-    elif dominant_trait == "Agility":
-        label = "Agility Archetype"
-    elif dominant_trait == "ReactionTime":
-        label = "Reaction Archetype"
-    else:
-        label = f"Archetype_{i+1}"
+# Assign descriptive names robustly
+used_labels = set()
+archetype_labels = []
 
-    descriptive_labels.append(label)
+for arch in archetypes:
+    # Sort trait indices by descending value
+    sorted_idx = np.argsort(-arch)
+    
+    # Pick the first unused trait
+    label = None
+    for idx in sorted_idx:
+        trait = feature_names[idx]
+        candidate_label = f"{trait} Archetype"
+        if candidate_label not in used_labels:
+            label = candidate_label
+            used_labels.add(candidate_label)
+            break
+    
+    # If all labels are already used, just append "Archetype_X"
+    if label is None:
+        label = f"Archetype_{len(used_labels)+1}"
+        used_labels.add(label)
+    
+    archetype_labels.append(label)
 
-archetype_labels = descriptive_labels
 
 # ---------------------------
 # 4. Streamlit interface
