@@ -14,7 +14,7 @@ from scipy.optimize import minimize
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_excel("synthetic_athlete_dataset_realistic.xlsx")
+        df = pd.read_excel("synthetic_athlete_dataset.xlsx")
     except FileNotFoundError:
         np.random.seed(42)
         n_athletes = 50
