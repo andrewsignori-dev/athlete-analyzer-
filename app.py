@@ -51,8 +51,8 @@ sns.set_theme(style="whitegrid")
 # ---------------------------
 # Figure Sizes
 # ---------------------------
-fig_width_full = 14
-fig_height_full = 7
+fig_width_full = 10
+fig_height_full = 5
 
 # ---------------------------
 # Dashboard Page
