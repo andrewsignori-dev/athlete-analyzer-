@@ -4,5 +4,6 @@ numpy
 scikit-learn
 matplotlib
 openpyxl
-scipy
+archetypes
+
 
