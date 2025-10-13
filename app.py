@@ -55,9 +55,9 @@ fig_width = 7
 fig_height = 4.5
 
 # ---------------------------
-# Dashboard Page
+# Athlete Ability Page
 # ---------------------------
-if page == "Dashboard":
+if page == "Athlete Ability":
     st.title("🏋️ Athlete Abilities Dashboard")
     st.markdown("Explore standardized abilities of athletes.")
     st.markdown("---")
