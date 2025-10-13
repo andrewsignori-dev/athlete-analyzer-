@@ -8,7 +8,7 @@ import numpy as np
 # ---------------------------
 # Page Configuration
 # ---------------------------
-st.set_page_config(page_title="Athlete Ability Distribution", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Athlete Ability", layout="wide", initial_sidebar_state="expanded")
 
 # Load dataset
 df = pd.read_excel("synthetic_athlete_dataset.xlsx")
@@ -59,7 +59,7 @@ fig_height = 4.5
 # ---------------------------
 if page == "Dashboard":
     st.title("🏋️ Athlete Abilities Dashboard")
-    st.markdown("Explore standardized abilities of athletes")
+    st.markdown("Explore standardized abilities of athletes.")
     st.markdown("---")
 
     # --- Row 1: Bar & Box ---
@@ -90,21 +90,11 @@ if page == "Dashboard":
 
     st.markdown("---")
 
-    # --- Row 2: Pie & Radar ---
+    # --- Row 2: Radar & Heatmap ---
     col1, col2 = st.columns(2)
 
-    # Pie Chart
-    with col1:
-        counts = filtered_df["Gender"].value_counts()
-        fig_pie, ax_pie = plt.subplots(figsize=(fig_width, fig_height))
-        ax_pie.pie(counts, labels=counts.index, autopct="%1.1f%%", colors=sns.color_palette("Set2"), startangle=90)
-        ax_pie.set_title("Gender Distribution")
-        fig_pie.tight_layout()
-        st.subheader("🥧 Gender Distribution")
-        st.pyplot(fig_pie)
-
     # Radar Chart
-    with col2:
+    with col1:
         avg_values_radar = filtered_df[abilities].mean().values
         num_vars = len(abilities)
         angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
@@ -121,16 +111,15 @@ if page == "Dashboard":
         st.subheader("📡 Overall Ability Profile")
         st.pyplot(fig_radar)
 
-    st.markdown("---")
-
-    # --- Row 3: Heatmap (full-width) ---
-    fig_corr, ax_corr = plt.subplots(figsize=(fig_width*2, fig_height))
-    corr = filtered_df[abilities].corr()
-    sns.heatmap(corr, annot=True, cmap="coolwarm", linewidths=0.5, ax=ax_corr)
-    ax_corr.set_title("Correlation Between Abilities")
-    fig_corr.tight_layout()
-    st.subheader("🔥 Ability Correlations")
-    st.pyplot(fig_corr)
+    # Heatmap
+    with col2:
+        corr = filtered_df[abilities].corr()
+        fig_corr, ax_corr = plt.subplots(figsize=(fig_width, fig_height))
+        sns.heatmap(corr, annot=True, cmap="coolwarm", linewidths=0.5, ax=ax_corr)
+        ax_corr.set_title("Correlation Between Abilities")
+        fig_corr.tight_layout()
+        st.subheader("🔥 Ability Correlations")
+        st.pyplot(fig_corr)
 
 # ---------------------------
 # Raw Data Page
@@ -138,4 +127,43 @@ if page == "Dashboard":
 elif page == "Raw Data":
     st.title("📝 Raw Athlete Data")
     st.write("You can filter the raw data using the sidebar filters below.")
+
+    # --- Row 1: Pie & Bar ---
+    col1, col2 = st.columns(2)
+
+    # Gender Pie Chart
+    with col1:
+        counts = filtered_df["Gender"].value_counts()
+        fig_pie, ax_pie = plt.subplots(figsize=(fig_width, fig_height))
+        ax_pie.pie(counts, labels=counts.index, autopct="%1.1f%%", colors=sns.color_palette("Set2"), startangle=90)
+        ax_pie.set_title("Gender Distribution")
+        fig_pie.tight_layout()
+        st.subheader("🥧 Gender Distribution")
+        st.pyplot(fig_pie)
+
+    # Age Bar Plot
+    with col2:
+        fig_age, ax_age = plt.subplots(figsize=(fig_width, fig_height))
+        sns.histplot(filtered_df["Age"], bins=10, kde=False, color="#1f77b4", ax=ax_age)
+        ax_age.set_xlabel("Age")
+        ax_age.set_ylabel("Count")
+        ax_age.set_title("Age Distribution")
+        fig_age.tight_layout()
+        st.subheader("📊 Age Distribution")
+        st.pyplot(fig_age)
+
+    st.markdown("---")
+
+    # --- Row 2: Sport Pie Chart ---
+    fig_sport, ax_sport = plt.subplots(figsize=(fig_width, fig_height))
+    sport_counts = filtered_df["Sport"].value_counts()
+    ax_sport.pie(sport_counts, labels=sport_counts.index, autopct="%1.1f%%", colors=sns.color_palette("Set2"), startangle=90)
+    ax_sport.set_title("Sport Distribution")
+    fig_sport.tight_layout()
+    st.subheader("🏅 Sport Distribution")
+    st.pyplot(fig_sport)
+
+    st.markdown("---")
+
+    # Show table
     st.dataframe(filtered_df)
