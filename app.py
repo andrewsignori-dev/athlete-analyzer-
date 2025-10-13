@@ -8,7 +8,7 @@ import numpy as np
 # ---------------------------
 # Page Configuration
 # ---------------------------
-st.set_page_config(page_title="Athlete Ability", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Athlete Ability", layout="centered", initial_sidebar_state="expanded")
 
 # Load dataset
 df = pd.read_excel("synthetic_athlete_dataset.xlsx")
