@@ -157,7 +157,7 @@ with col2:
     sns.histplot(filtered_df["Age"], bins=10, kde=False, color="#1f77b4", ax=ax_age)
     ax_age.set_xlabel("Age")
     ax_age.set_ylabel("Count")
-    ax_age.set_title("Age Distribution")
+    #ax_age.set_title("Age Distribution")
     fig_age.tight_layout()
     st.subheader("📊 Age Distribution")
     st.pyplot(fig_age)
