@@ -131,51 +131,51 @@ elif page == "Raw Data":
      # Show table
     st.dataframe(df)
 
-# Smaller figure size for Raw Data plots
-fig_width_raw = 4
-fig_height_raw = 2.5
-label_fontsize = 5  # smaller labels
+    # Smaller figure size for Raw Data plots
+    fig_width_raw = 4
+    fig_height_raw = 2.5
+    label_fontsize = 5  # smaller labels
 
-# --- Row 1: Gender Pie & Age Bar ---
-col1, col2 = st.columns(2)
+    # --- Row 1: Gender Pie & Age Bar ---
+    col1, col2 = st.columns(2)
 
-# Gender Pie Chart
-with col1:
-    counts = filtered_df["Gender"].value_counts()
-    fig_pie, ax_pie = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
-    ax_pie.pie(counts, labels=counts.index, autopct="%1.1f%%",
+    # Gender Pie Chart
+    with col1:
+        counts = filtered_df["Gender"].value_counts()
+        fig_pie, ax_pie = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
+        ax_pie.pie(counts, labels=counts.index, autopct="%1.1f%%",
                colors=sns.color_palette("Set2"), startangle=90,
                textprops={'fontsize': label_fontsize})
-    #ax_pie.set_title("Gender Distribution", fontsize=12)
-    fig_pie.tight_layout()
-    st.subheader("🥧 Gender Distribution")
-    st.pyplot(fig_pie)
+        #ax_pie.set_title("Gender Distribution", fontsize=12)
+        fig_pie.tight_layout()
+        st.subheader("🥧 Gender Distribution")
+        st.pyplot(fig_pie)
 
 # Age Bar Plot
-with col2:
-    fig_age, ax_age = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
-    sns.histplot(filtered_df["Age"], bins=10, kde=False, color="#1f77b4", ax=ax_age)
-    ax_age.set_xlabel("Age")
-    ax_age.set_ylabel("Count")
-    #ax_age.set_title("Age Distribution")
-    fig_age.tight_layout()
-    st.subheader("📊 Age Distribution")
-    st.pyplot(fig_age)
+   with col2:
+       fig_age, ax_age = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
+       sns.histplot(filtered_df["Age"], bins=10, kde=False, color="#1f77b4", ax=ax_age)
+       ax_age.set_xlabel("Age")
+       ax_age.set_ylabel("Count")
+       #ax_age.set_title("Age Distribution")
+       fig_age.tight_layout()
+       st.subheader("📊 Age Distribution")
+       st.pyplot(fig_age)
 
-st.markdown("---")
+   st.markdown("---")
 
-# --- Row 2: Sport Pie Chart aligned with first row ---
-col1, col2 = st.columns([1, 1])  # two equal columns
-with col1:
-    fig_sport, ax_sport = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
-    sport_counts = filtered_df["Sport"].value_counts()
-    ax_sport.pie(sport_counts, labels=sport_counts.index, autopct="%1.1f%%",
+   # --- Row 2: Sport Pie Chart aligned with first row ---
+   col1, col2 = st.columns([1, 1])  # two equal columns
+   with col1:
+       fig_sport, ax_sport = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
+       sport_counts = filtered_df["Sport"].value_counts()
+       ax_sport.pie(sport_counts, labels=sport_counts.index, autopct="%1.1f%%",
                  colors=sns.color_palette("Set2"), startangle=90,
                  textprops={'fontsize': label_fontsize})
-    #ax_sport.set_title("Sport Distribution", fontsize=12)
-    fig_sport.tight_layout()
-    st.subheader("🏅 Sport Distribution")
-    st.pyplot(fig_sport)
+       #ax_sport.set_title("Sport Distribution", fontsize=12)
+      fig_sport.tight_layout()
+      st.subheader("🏅 Sport Distribution")
+      st.pyplot(fig_sport)
 
 
 
