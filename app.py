@@ -49,21 +49,27 @@ filtered_df = filtered_df[(filtered_df["Age"] >= selected_age[0]) & (filtered_df
 sns.set_theme(style="whitegrid")
 
 # ---------------------------
+# Figure Sizes
+# ---------------------------
+fig_width_full = 14
+fig_height_full = 6
+fig_width_col = 7
+fig_height_col = 6
+
+# ---------------------------
 # Dashboard Page
 # ---------------------------
 if page == "Dashboard":
-    st.title("🏋️ Athlete Abilities Dashboard", anchor=None)
+    st.title("🏋️ Athlete Abilities Dashboard")
     st.markdown("Explore standardized abilities of athletes. Z-scores show performance relative to the group.")
     st.markdown("---")
 
-    # ---------------------------
-    # Full-Width Bar Plot
-    # ---------------------------
+    # Full-width Bar Plot
     avg_values = filtered_df[abilities].mean()
     colors = ["#2ca02c" if v >= 0 else "#d62728" for v in avg_values]
 
     with st.container():
-        fig_bar, ax_bar = plt.subplots(figsize=(16,7))
+        fig_bar, ax_bar = plt.subplots(figsize=(fig_width_full, fig_height_full))
         sns.barplot(x=avg_values.index, y=avg_values.values, palette=colors, ax=ax_bar)
         ax_bar.axhline(0, color="black", linestyle="--")
         ax_bar.set_ylabel("Z-score", fontsize=12)
@@ -75,12 +81,10 @@ if page == "Dashboard":
         st.markdown("Green bars = above average, Red bars = below average")
         st.markdown("---")
 
-    # ---------------------------
-    # Box Plot
-    # ---------------------------
+    # Full-width Box Plot
     melted = filtered_df.melt(id_vars=["AthleteID"], value_vars=abilities, var_name="Ability", value_name="Z-Score")
     with st.container():
-        fig_box, ax_box = plt.subplots(figsize=(16,7))
+        fig_box, ax_box = plt.subplots(figsize=(fig_width_full, fig_height_full))
         sns.boxplot(x="Ability", y="Z-Score", data=melted, palette="coolwarm", ax=ax_box)
         ax_box.axhline(0, color="black", linestyle="--")
         ax_box.set_xlabel("Ability", fontsize=12)
@@ -92,22 +96,20 @@ if page == "Dashboard":
         st.markdown("Shows spread of abilities among athletes (0 = overall avg).")
         st.markdown("---")
 
-    # ---------------------------
     # Two-column layout: Pie + Radar
-    # ---------------------------
     col1, col2 = st.columns([1,1])
 
-    # Pie chart
+    # Pie Chart
     with col1:
         counts = filtered_df["Gender"].value_counts()
-        fig_pie, ax_pie = plt.subplots(figsize=(10,10))
+        fig_pie, ax_pie = plt.subplots(figsize=(fig_width_col, fig_height_col))
         ax_pie.pie(counts, labels=counts.index, autopct="%1.1f%%", colors=sns.color_palette("Set2"), startangle=90)
         ax_pie.set_title("Gender Distribution", fontsize=14)
         fig_pie.tight_layout()
         st.subheader("🥧 Gender Distribution")
         st.pyplot(fig_pie)
 
-    # Radar chart
+    # Radar Chart
     with col2:
         avg_values_radar = filtered_df[abilities].mean().values
         num_vars = len(abilities)
@@ -115,7 +117,7 @@ if page == "Dashboard":
         avg_values_loop = np.concatenate((avg_values_radar, [avg_values_radar[0]]))
         angles_loop = angles + angles[:1]
 
-        fig_radar, ax_radar = plt.subplots(figsize=(12,12), subplot_kw=dict(polar=True))
+        fig_radar, ax_radar = plt.subplots(figsize=(fig_width_col, fig_height_col), subplot_kw=dict(polar=True))
         ax_radar.plot(angles_loop, avg_values_loop, color="blue", linewidth=2)
         ax_radar.fill(angles_loop, avg_values_loop, color="skyblue", alpha=0.25)
         ax_radar.set_xticks(angles)
@@ -128,12 +130,10 @@ if page == "Dashboard":
 
     st.markdown("---")
 
-    # ---------------------------
-    # Full-Width Heatmap
-    # ---------------------------
+    # Full-width Heatmap
     with st.container():
         corr = filtered_df[abilities].corr()
-        fig_corr, ax_corr = plt.subplots(figsize=(16,7))
+        fig_corr, ax_corr = plt.subplots(figsize=(fig_width_full, fig_height_full))
         sns.heatmap(corr, annot=True, cmap="coolwarm", linewidths=0.5, ax=ax_corr)
         ax_corr.set_title("Correlation Between Abilities", fontsize=14)
         fig_corr.tight_layout()
