@@ -89,6 +89,7 @@ if page == "Athlete Ability":
         ax_box.axhline(0, color="black", linestyle="--")
         ax_box.tick_params(axis='x', labelsize=font_size)
         ax_box.tick_params(axis='y', labelsize=font_size)
+        ax_box.set_xlabel("Ability", fontsize=font_size)
         fig_box.tight_layout()
         st.subheader("📦 Ability Distribution")
         st.pyplot(fig_box)
