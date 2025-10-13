@@ -45,6 +45,11 @@ filtered_df = filtered_df[(filtered_df["Age"] >= selected_age[0]) & (filtered_df
 if page == "Dashboard":
     st.title("Athlete Abilities Dashboard (Standardized)")
 
+    # ---------------------------
+    # Create plot figures and descriptions
+    # ---------------------------
+    plots = []
+
     # 1. Bar plot
     avg_values = filtered_df[abilities].mean()
     colors = ["#2ca02c" if v >= 0 else "#d62728" for v in avg_values]
@@ -53,6 +58,7 @@ if page == "Dashboard":
     ax_bar.axhline(0, color="black", linestyle="--")
     ax_bar.set_ylabel("Z-score")
     fig_bar.tight_layout()
+    plots.append((fig_bar, "**Bar Plot:** Average abilities. Green = above avg, Red = below avg."))
 
     # 2. Box plot
     melted = filtered_df.melt(id_vars=["AthleteID"], value_vars=abilities, var_name="Ability", value_name="Z-Score")
@@ -60,18 +66,21 @@ if page == "Dashboard":
     sns.boxplot(x="Ability", y="Z-Score", data=melted, palette="coolwarm", ax=ax_box)
     ax_box.axhline(0, color="black", linestyle="--")
     fig_box.tight_layout()
+    plots.append((fig_box, "**Box Plot:** Distribution of abilities, 0 = overall avg."))
 
     # 3. Pie chart
     counts = filtered_df["Gender"].value_counts()
     fig_pie, ax_pie = plt.subplots(figsize=(5,5))
     ax_pie.pie(counts, labels=counts.index, autopct="%1.1f%%", colors=sns.color_palette("Set2"))
     fig_pie.tight_layout()
+    plots.append((fig_pie, "**Pie Chart:** Gender distribution."))
 
     # 4. Heatmap
     corr = filtered_df[abilities].corr()
     fig_corr, ax_corr = plt.subplots(figsize=(6,5))
     sns.heatmap(corr, annot=True, cmap="coolwarm", ax=ax_corr)
     fig_corr.tight_layout()
+    plots.append((fig_corr, "**Heatmap:** Correlation between abilities."))
 
     # 5. Radar chart
     avg_values_radar = filtered_df[abilities].mean().values
@@ -87,33 +96,19 @@ if page == "Dashboard":
     ax_radar.set_xticklabels(abilities)
     ax_radar.axhline(0, color="grey", linestyle="--")
     fig_radar.tight_layout()
+    plots.append((fig_radar, "**Radar Chart:** Overall ability profile."))
 
-    # Display plots in grid
+    # ---------------------------
+    # Display plots in responsive grid
+    # ---------------------------
     st.subheader("Visualizations")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.pyplot(fig_bar)
-        st.write("**Bar Plot:** Average abilities. Green = above avg, Red = below avg.")
-
-    with col2:
-        st.pyplot(fig_box)
-        st.write("**Box Plot:** Distribution of abilities, 0 = overall avg.")
-
-    with col3:
-        st.pyplot(fig_pie)
-        st.write("**Pie Chart:** Gender distribution.")
-
-    col4, col5, col6 = st.columns(3)
-    with col4:
-        st.pyplot(fig_corr)
-        st.write("**Heatmap:** Correlation between abilities.")
-
-    with col5:
-        st.pyplot(fig_radar)
-        st.write("**Radar Chart:** Overall ability profile.")
-
-    with col6:
-        st.write("Optional: Add more visualizations here.")
+    n_cols = 3  # number of columns per row
+    for i in range(0, len(plots), n_cols):
+        cols = st.columns(n_cols)
+        for j, (fig, desc) in enumerate(plots[i:i+n_cols]):
+            with cols[j]:
+                st.pyplot(fig)
+                st.write(desc)
 
 # ---------------------------
 # Page 2: Raw Data
