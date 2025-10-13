@@ -1,16 +1,11 @@
-# ---------------------------
-# 0. Imports
-# ---------------------------
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
-from scipy.optimize import minimize
+from archetypes import AA
 
-# ---------------------------
-# 1. Load dataset
-# ---------------------------
+# Load dataset
 @st.cache_data
 def load_data():
     try:
@@ -31,72 +26,23 @@ def load_data():
 df_athletes = load_data()
 features = ['Speed', 'Endurance', 'Strength', 'Agility', 'ReactionTime']
 
-# ---------------------------
-# 2. Standardize data
-# ---------------------------
+# Standardize data
 scaler = StandardScaler()
 X = scaler.fit_transform(df_athletes[features])
 
-# ---------------------------
-# 3. Archetypal Analysis
-# ---------------------------
-def archetypal_analysis(X, n_archetypes=3, n_iter=100):
-    n_samples, n_features = X.shape
-    archetypes = X[np.random.choice(n_samples, n_archetypes, replace=False)]
-    for _ in range(n_iter):
-        alphas = np.linalg.lstsq(archetypes.T, X.T, rcond=None)[0].T
-        alphas = np.clip(alphas, 0, 1)
-        alphas = alphas / (alphas.sum(axis=1, keepdims=True) + 1e-8)
-        archetypes = (alphas.T @ X) / (alphas.sum(axis=0)[:, None] + 1e-8)
-    return archetypes
+# Perform Archetypal Analysis
+aa = AA(n_archetypes=3)
+aa.fit(X)
+archetypes = aa.archetypes_
 
-n_archetypes = 3
-archetypes_scaled = archetypal_analysis(X, n_archetypes=n_archetypes)
-archetypes = scaler.inverse_transform(archetypes_scaled)
+# Assign descriptive labels to archetypes
+archetype_labels = [
+    "Endurance-Dominant Archetype",
+    "Strength-Dominant Archetype",
+    "Agility-Dominant Archetype"
+]
 
-# ---------------------------
-# 4. Assign unique descriptive archetype names
-# ---------------------------
-feature_names = features
-used_labels = set()
-archetype_labels = []
-
-for arch in archetypes:
-    sorted_idx = np.argsort(-arch)  # descending
-    label = None
-    for idx in sorted_idx:
-        candidate_label = f"{feature_names[idx]} Archetype"
-        if candidate_label not in used_labels:
-            label = candidate_label
-            used_labels.add(candidate_label)
-            break
-    if label is None:
-        label = f"Archetype_{len(used_labels)+1}"
-        used_labels.add(label)
-    archetype_labels.append(label)
-
-# ---------------------------
-# 5. Function to compute alphas robustly
-# ---------------------------
-def compute_alphas(archetypes_scaled, x_scaled):
-    n = archetypes_scaled.shape[0]
-
-    def objective(alpha):
-        recon = alpha @ archetypes_scaled
-        return np.sum((x_scaled - recon) ** 2)
-
-    cons = ({'type': 'eq', 'fun': lambda alpha: np.sum(alpha) - 1})
-    bounds = [(0,1) for _ in range(n)]
-    res = minimize(objective, x0=np.ones(n)/n, bounds=bounds, constraints=cons)
-    if res.success:
-        return res.x
-    else:
-        # fallback uniform distribution
-        return np.ones(n)/n
-
-# ---------------------------
-# 6. Streamlit Interface
-# ---------------------------
+# Streamlit Interface
 st.set_page_config(page_title="Athlete Typology Analyzer", page_icon="🏃‍♂️", layout="centered")
 st.title("🏋️ Athlete Typology Analyzer")
 st.markdown("Enter athlete metrics to see your **archetype composition** and **dominant traits**.")
@@ -113,9 +59,11 @@ if st.sidebar.button("Analyze"):
     x_input = np.array([[speed, endurance, strength, agility, reaction_time]])
     x_scaled = scaler.transform(x_input)
 
-    # Compute alphas using optimization
-    alphas = compute_alphas(archetypes_scaled, x_scaled[0])
-    alpha_percent = (alphas * 100).round(2)
+    # Compute alphas using the archetypes
+    alphas = aa.transform(x_scaled)
+
+    # Calculate percentage contributions
+    alpha_percent = (alphas[0] * 100).round(2)
 
     # Safety: minimum wedge size
     alpha_percent = np.maximum(alpha_percent, 0.1)
@@ -138,7 +86,7 @@ if st.sidebar.button("Analyze"):
     dominant_values = []
     for arch, label in zip(archetypes, archetype_labels):
         dominant_idx = np.argmax(arch)
-        dominant_trait = feature_names[dominant_idx]
+        dominant_trait = features[dominant_idx]
         value = arch[dominant_idx]
         dominant_values.append({"Archetype": label, "Dominant Trait": dominant_trait, "Value": round(value, 2)})
     st.table(pd.DataFrame(dominant_values))
