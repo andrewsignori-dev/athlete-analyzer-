@@ -1,95 +1,80 @@
+# app.py
 import streamlit as st
 import pandas as pd
-import numpy as np
+import seaborn as sns
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import StandardScaler
-from archetypes import AA
 
 # Load dataset
-@st.cache_data
-def load_data():
-    try:
-        df = pd.read_excel("synthetic_athlete_dataset.xlsx")
-    except FileNotFoundError:
-        np.random.seed(42)
-        n_athletes = 50
-        df = pd.DataFrame({
-            "Athlete": [f"Athlete_{i+1}" for i in range(n_athletes)],
-            "Speed": np.random.normal(25, 3, n_athletes),
-            "Endurance": np.random.normal(70, 10, n_athletes),
-            "Strength": np.random.normal(100, 15, n_athletes),
-            "Agility": np.random.normal(50, 5, n_athletes),
-            "ReactionTime": np.random.normal(0.3, 0.05, n_athletes)
-        })
-    return df
+df = pd.read_excel("synthetic_athlete_dataset.xlsx")
 
-df_athletes = load_data()
-features = ['Speed', 'Endurance', 'Strength', 'Agility', 'ReactionTime']
+# App title
+st.title("Athlete Abilities Explorer")
 
-# Standardize data
-scaler = StandardScaler()
-X = scaler.fit_transform(df_athletes[features])
+# Sidebar filters
+st.sidebar.header("Filter Athletes")
 
-# Perform Archetypal Analysis
-aa = AA(n_archetypes=3)
-aa.fit(X)
-archetypes = aa.archetypes_
+# Gender filter
+gender_options = ["All"] + df["Gender"].unique().tolist()
+selected_gender = st.sidebar.selectbox("Select Gender", gender_options)
 
-# Assign descriptive labels to archetypes
-archetype_labels = [
-    "Endurance-Dominant Archetype",
-    "Strength-Dominant Archetype",
-    "Agility-Dominant Archetype"
-]
+# Sport filter
+sport_options = ["All"] + df["Sport"].unique().tolist()
+selected_sport = st.sidebar.selectbox("Select Sport", sport_options)
 
-# Streamlit Interface
-st.set_page_config(page_title="Athlete Typology Analyzer", page_icon="🏃‍♂️", layout="centered")
-st.title("🏋️ Athlete Typology Analyzer")
-st.markdown("Enter athlete metrics to see your **archetype composition** and **dominant traits**.")
+# Age range filter
+min_age, max_age = int(df["Age"].min()), int(df["Age"].max())
+selected_age = st.sidebar.slider("Select Age Range", min_age, max_age, (min_age, max_age))
 
-# Sidebar inputs
-st.sidebar.header("Input Athlete Metrics")
-speed = st.sidebar.number_input("Speed", value=25.0, min_value=10.0, max_value=40.0, step=0.1)
-endurance = st.sidebar.number_input("Endurance", value=70.0, min_value=30.0, max_value=100.0, step=0.1)
-strength = st.sidebar.number_input("Strength", value=100.0, min_value=50.0, max_value=200.0, step=0.1)
-agility = st.sidebar.number_input("Agility", value=50.0, min_value=20.0, max_value=80.0, step=0.1)
-reaction_time = st.sidebar.number_input("Reaction Time", value=0.3, min_value=0.1, max_value=0.6, step=0.01)
+# Filter dataframe based on selections
+filtered_df = df.copy()
+if selected_gender != "All":
+    filtered_df = filtered_df[filtered_df["Gender"] == selected_gender]
+if selected_sport != "All":
+    filtered_df = filtered_df[filtered_df["Sport"] == selected_sport]
+filtered_df = filtered_df[(filtered_df["Age"] >= selected_age[0]) & (filtered_df["Age"] <= selected_age[1])]
 
-if st.sidebar.button("Analyze"):
-    x_input = np.array([[speed, endurance, strength, agility, reaction_time]])
-    x_scaled = scaler.transform(x_input)
+# Show filtered data
+st.subheader("Filtered Data")
+st.dataframe(filtered_df)
 
-    # Compute alphas using the archetypes
-    alphas = aa.transform(x_scaled)
+# Visualization options
+st.sidebar.header("Visualizations")
+plot_type = st.sidebar.radio("Select Plot Type", ["Bar Plot", "Box Plot", "Pie Chart", "Correlation Heatmap"])
 
-    # Calculate percentage contributions
-    alpha_percent = (alphas[0] * 100).round(2)
+abilities = ["Speed", "Endurance", "Strength", "Agility", "ReactionTime"]
 
-    # Safety: minimum wedge size
-    alpha_percent = np.maximum(alpha_percent, 0.1)
-    alpha_percent = alpha_percent / alpha_percent.sum() * 100
-
-    # Display textual composition
-    st.subheader("🏅 Archetype Composition")
-    for label, pct in zip(archetype_labels, alpha_percent):
-        st.write(f"**{label}:** {pct:.1f}%")
-
-    # Pie chart
+# Bar plot
+if plot_type == "Bar Plot":
+    st.subheader("Average Abilities")
+    avg_values = filtered_df[abilities].mean()
     fig, ax = plt.subplots()
-    ax.pie(alpha_percent, labels=archetype_labels, autopct='%1.1f%%', startangle=90,
-           colors=['#ff9999','#66b3ff','#99ff99'])
-    ax.set_title("Archetype Composition")
+    sns.barplot(x=avg_values.index, y=avg_values.values, palette="viridis", ax=ax)
+    ax.set_ylabel("Average Value")
     st.pyplot(fig)
 
-    # Show dominant trait values for each archetype
-    st.subheader("📊 Dominant Trait Values of Archetypes")
-    dominant_values = []
-    for arch, label in zip(archetypes, archetype_labels):
-        dominant_idx = np.argmax(arch)
-        dominant_trait = features[dominant_idx]
-        value = arch[dominant_idx]
-        dominant_values.append({"Archetype": label, "Dominant Trait": dominant_trait, "Value": round(value, 2)})
-    st.table(pd.DataFrame(dominant_values))
+# Box plot
+elif plot_type == "Box Plot":
+    st.subheader("Abilities Distribution")
+    melted = filtered_df.melt(id_vars=["AthleteID"], value_vars=abilities, var_name="Ability", value_name="Value")
+    fig, ax = plt.subplots()
+    sns.boxplot(x="Ability", y="Value", data=melted, palette="coolwarm", ax=ax)
+    st.pyplot(fig)
 
-    st.markdown("---")
-    st.markdown("*Computed using archetypal analysis on standardized athlete metrics.*")
+# Pie chart
+elif plot_type == "Pie Chart":
+    st.subheader("Gender Distribution")
+    if "Gender" in filtered_df.columns:
+        gender_counts = filtered_df["Gender"].value_counts()
+        fig, ax = plt.subplots()
+        ax.pie(gender_counts, labels=gender_counts.index, autopct="%1.1f%%", colors=sns.color_palette("Set2"))
+        st.pyplot(fig)
+    else:
+        st.write("Pie chart not available for the selected filters.")
+
+# Correlation heatmap
+elif plot_type == "Correlation Heatmap":
+    st.subheader("Abilities Correlation Heatmap")
+    corr = filtered_df[abilities].corr()
+    fig, ax = plt.subplots()
+    sns.heatmap(corr, annot=True, cmap="coolwarm", ax=ax)
+    st.pyplot(fig)
