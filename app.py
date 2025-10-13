@@ -51,8 +51,8 @@ sns.set_theme(style="whitegrid")
 # ---------------------------
 # Figure Sizes
 # ---------------------------
-fig_width_full = 8
-fig_height_full = 4
+fig_width = 7
+fig_height = 4.5
 
 # ---------------------------
 # Dashboard Page
@@ -62,75 +62,75 @@ if page == "Dashboard":
     st.markdown("Explore standardized abilities of athletes. Z-scores show performance relative to the group.")
     st.markdown("---")
 
-    # --- Bar Plot ---
-    avg_values = filtered_df[abilities].mean()
-    colors = ["#2ca02c" if v >= 0 else "#d62728" for v in avg_values]
+    # --- Row 1: Bar & Box ---
+    col1, col2 = st.columns(2)
 
-    fig_bar, ax_bar = plt.subplots(figsize=(fig_width_full, fig_height_full))
-    sns.barplot(x=avg_values.index, y=avg_values.values, palette=colors, ax=ax_bar)
-    ax_bar.axhline(0, color="black", linestyle="--")
-    ax_bar.set_ylabel("Z-score", fontsize=12)
-    ax_bar.set_xlabel("Ability", fontsize=12)
-    ax_bar.tick_params(labelsize=11)
-    fig_bar.tight_layout()
-    st.subheader("📊 Average Abilities")
-    st.pyplot(fig_bar)
-    st.markdown("Green bars = above average, Red bars = below average")
+    # Bar Plot
+    with col1:
+        avg_values = filtered_df[abilities].mean()
+        colors = ["#2ca02c" if v >= 0 else "#d62728" for v in avg_values]
+        fig_bar, ax_bar = plt.subplots(figsize=(fig_width, fig_height))
+        sns.barplot(x=avg_values.index, y=avg_values.values, palette=colors, ax=ax_bar)
+        ax_bar.axhline(0, color="black", linestyle="--")
+        ax_bar.set_ylabel("Z-score")
+        ax_bar.set_xlabel("Ability")
+        fig_bar.tight_layout()
+        st.subheader("📊 Average Abilities")
+        st.pyplot(fig_bar)
+
+    # Box Plot
+    with col2:
+        melted = filtered_df.melt(id_vars=["AthleteID"], value_vars=abilities, var_name="Ability", value_name="Z-Score")
+        fig_box, ax_box = plt.subplots(figsize=(fig_width, fig_height))
+        sns.boxplot(x="Ability", y="Z-Score", data=melted, palette="coolwarm", ax=ax_box)
+        ax_box.axhline(0, color="black", linestyle="--")
+        fig_box.tight_layout()
+        st.subheader("📦 Ability Distribution")
+        st.pyplot(fig_box)
+
     st.markdown("---")
 
-    # --- Box Plot ---
-    melted = filtered_df.melt(id_vars=["AthleteID"], value_vars=abilities, var_name="Ability", value_name="Z-Score")
-    fig_box, ax_box = plt.subplots(figsize=(fig_width_full, fig_height_full))
-    sns.boxplot(x="Ability", y="Z-Score", data=melted, palette="coolwarm", ax=ax_box)
-    ax_box.axhline(0, color="black", linestyle="--")
-    ax_box.set_xlabel("Ability", fontsize=12)
-    ax_box.set_ylabel("Z-score", fontsize=12)
-    ax_box.tick_params(labelsize=11)
-    fig_box.tight_layout()
-    st.subheader("📦 Ability Distribution")
-    st.pyplot(fig_box)
-    st.markdown("Shows spread of abilities among athletes (0 = overall avg).")
+    # --- Row 2: Pie & Radar ---
+    col1, col2 = st.columns(2)
+
+    # Pie Chart
+    with col1:
+        counts = filtered_df["Gender"].value_counts()
+        fig_pie, ax_pie = plt.subplots(figsize=(fig_width, fig_height))
+        ax_pie.pie(counts, labels=counts.index, autopct="%1.1f%%", colors=sns.color_palette("Set2"), startangle=90)
+        ax_pie.set_title("Gender Distribution")
+        fig_pie.tight_layout()
+        st.subheader("🥧 Gender Distribution")
+        st.pyplot(fig_pie)
+
+    # Radar Chart
+    with col2:
+        avg_values_radar = filtered_df[abilities].mean().values
+        num_vars = len(abilities)
+        angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+        avg_values_loop = np.concatenate((avg_values_radar, [avg_values_radar[0]]))
+        angles_loop = angles + angles[:1]
+        fig_radar, ax_radar = plt.subplots(figsize=(fig_width, fig_height), subplot_kw=dict(polar=True))
+        ax_radar.plot(angles_loop, avg_values_loop, color="blue", linewidth=2)
+        ax_radar.fill(angles_loop, avg_values_loop, color="skyblue", alpha=0.25)
+        ax_radar.set_xticks(angles)
+        ax_radar.set_xticklabels(abilities)
+        ax_radar.set_yticklabels(np.round(ax_radar.get_yticks(), 2))
+        ax_radar.axhline(0, color="grey", linestyle="--")
+        fig_radar.tight_layout()
+        st.subheader("📡 Overall Ability Profile")
+        st.pyplot(fig_radar)
+
     st.markdown("---")
 
-    # --- Pie Chart ---
-    counts = filtered_df["Gender"].value_counts()
-    fig_pie, ax_pie = plt.subplots(figsize=(fig_width_full, fig_height_full))
-    ax_pie.pie(counts, labels=counts.index, autopct="%1.1f%%", colors=sns.color_palette("Set2"), startangle=90)
-    ax_pie.set_title("Gender Distribution", fontsize=14)
-    fig_pie.tight_layout()
-    st.subheader("🥧 Gender Distribution")
-    st.pyplot(fig_pie)
-    st.markdown("---")
-
-    # --- Radar Chart ---
-    avg_values_radar = filtered_df[abilities].mean().values
-    num_vars = len(abilities)
-    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
-    avg_values_loop = np.concatenate((avg_values_radar, [avg_values_radar[0]]))
-    angles_loop = angles + angles[:1]
-
-    fig_radar, ax_radar = plt.subplots(figsize=(fig_width_full, fig_height_full), subplot_kw=dict(polar=True))
-    ax_radar.plot(angles_loop, avg_values_loop, color="blue", linewidth=2)
-    ax_radar.fill(angles_loop, avg_values_loop, color="skyblue", alpha=0.25)
-    ax_radar.set_xticks(angles)
-    ax_radar.set_xticklabels(abilities, fontsize=12)
-    ax_radar.set_yticklabels(np.round(ax_radar.get_yticks(), 2), fontsize=11)
-    ax_radar.axhline(0, color="grey", linestyle="--")
-    fig_radar.tight_layout()
-    st.subheader("📡 Overall Ability Profile")
-    st.pyplot(fig_radar)
-    st.markdown("Radar chart shows overall performance per ability. Above 0 = above average, below 0 = below average.")
-    st.markdown("---")
-
-    # --- Heatmap ---
+    # --- Row 3: Heatmap (full-width) ---
+    fig_corr, ax_corr = plt.subplots(figsize=(fig_width*2, fig_height))
     corr = filtered_df[abilities].corr()
-    fig_corr, ax_corr = plt.subplots(figsize=(fig_width_full, fig_height_full))
     sns.heatmap(corr, annot=True, cmap="coolwarm", linewidths=0.5, ax=ax_corr)
-    ax_corr.set_title("Correlation Between Abilities", fontsize=14)
+    ax_corr.set_title("Correlation Between Abilities")
     fig_corr.tight_layout()
     st.subheader("🔥 Ability Correlations")
     st.pyplot(fig_corr)
-    st.markdown("---")
 
 # ---------------------------
 # Raw Data Page
