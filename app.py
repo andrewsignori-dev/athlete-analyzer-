@@ -491,7 +491,7 @@ elif page == "Performance Prediction Model":
         st.warning("No records found for the selected combination.")
     else:
         st.markdown("### 🏋️ Training Sessions")
-        st.dataframe(filtered_df, use_container_width=True)
+        #st.dataframe(filtered_df, use_container_width=True)
         
         # --- Compute workload per session ---
         filtered_df["workload"] = filtered_df["Set"] * filtered_df["Rep"] * filtered_df["Load (kg)"]
@@ -562,6 +562,11 @@ elif page == "Performance Prediction Model":
 
             with col2:
                 st.metric(label="Change (%)", value=f"{perf_change:.2f}%")
+            
+            # --- Dataset Preview & Filters + Plots ---
+            with st.expander("🧮 Show Raw Athlete Data"):
+                st.dataframe(filtered_df, use_container_width=True)
+                
 
 
 
