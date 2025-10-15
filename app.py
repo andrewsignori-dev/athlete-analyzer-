@@ -27,7 +27,7 @@ df_scaled[abilities] = scaler.fit_transform(df[abilities])
 # Sidebar Filters
 # ---------------------------
 st.sidebar.title("⚡ Athlete Dashboard Filters")
-page = st.sidebar.radio("Navigate to", ["Athlete Ability", "Raw Data", "Injury Risk Model"])
+page = st.sidebar.radio("Navigate to", ["Athlete Ability", "Injury Risk Model"])
 
 
 st.sidebar.header("Filter Athletes")
