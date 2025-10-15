@@ -292,7 +292,7 @@ if page == "Athlete Ability":
 # ---------------------------
 elif page == "Injury Risk Model":
     st.title("🏃 Injury Risk Model")
-    st.markdown("Estimate the workload threshold (**w*** ) associated with a target injury probability")
+    st.markdown("Estimate the workload threshold (Kg) associated with a target injury probability")
     st.markdown("---")
 
 
@@ -324,10 +324,10 @@ elif page == "Injury Risk Model":
         max_value=100,
         value=20,
         step=1,
-        help="Select the target injury probability to compute the workload threshold (w*)."
+        help="Select the target injury probability to compute the workload threshold (Kg)."
     )
 
-    # Compute w* and bootstrap CI
+    # Compute threshold and bootstrap CI
     X_target = prob_target_percent / 100
     w_star = (logit(X_target) - beta0_hat) / beta1_hat
 
@@ -355,20 +355,24 @@ elif page == "Injury Risk Model":
         p_pred = 1 / (1 + np.exp(-(beta0_hat + beta1_hat * work_range)))
 
         fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-        ax.scatter(df_injury["workload"], df_injury["injury"], alpha=0.3, color="#1f77b4", label="Data")
-        ax.plot(work_range, p_pred, color="#d62728", linewidth=1.5, label="Predicted Probability")
-        ax.axvline(w_star, color="#2ca02c", linestyle="--", label=f"w* = {w_star:.2f}")
-        ax.set_xlabel("Workload", fontsize=font_size)
-        ax.set_ylabel("Injury Probability", fontsize=font_size)
+        ax.scatter(df_injury["workload"], df_injury["injury"],alpha=0.4, s=40, color="#1f77b4", label="Observed Data", edgecolor="w")
+        ax.plot(work_range, p_pred, color="#d62728", linewidth=2, label="Predicted Probability")
+        ax.fill_between(work_range, 0, p_pred, color="#d62728", alpha=0.1)
+        ax.axvline(w_star, color="#2ca02c", linestyle="--", linewidth=2,label=f"Optimal Workload (w*) = {w_star:.2f}")
+        ax.scatter(w_star, np.interp(w_star, work_range, p_pred), color="#2ca02c", s=80, zorder=5)
+        ax.set_xlabel("Workload", fontsize=font_size+2, weight='bold')
+        ax.set_ylabel("Injury Probability", fontsize=font_size+2, weight='bold')
         ax.tick_params(axis='x', labelsize=font_size)
         ax.tick_params(axis='y', labelsize=font_size)
-        ax.legend(fontsize=font_size)
+        ax.grid(alpha=0.3, linestyle='--')
+        ax.legend(fontsize=font_size, frameon=True, facecolor='white', edgecolor='black')
         fig.tight_layout()
         st.pyplot(fig)
 
+
     with col2:
         st.subheader("📋 Results")
-        st.markdown(f"**Workload threshold (w\\*)**: {w_star:.2f}")
+        st.markdown(f"**Workload threshold (Kg)**: {w_star:.2f}")
         st.markdown(f"**95% CI**: [{ci_lower:.2f}, {ci_upper:.2f}]")
         st.markdown("---")
         st.markdown(f"For an injury probability of **{prob_target_percent}%**, the estimated workload threshold is **{w_star:.2f}**.")
