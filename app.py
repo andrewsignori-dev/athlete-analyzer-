@@ -218,7 +218,7 @@ if page == "Athlete Ability":
     # ---------------------------
     # Raw Data (Collapsible Section)
     # ---------------------------
-    with st.expander("📝 Show Raw Athlete Data (Dynamic)"):
+    with st.expander("📝 Show Raw Athlete Data"):
         st.markdown("Filter and explore the raw data independently from the main dashboard.")
         st.markdown("---")
 
@@ -287,7 +287,9 @@ if page == "Athlete Ability":
         with col2:
             st.write("")  # empty space for alignment
 
-# --- Injury Risk Model Page ---
+# ---------------------------
+# Injury Risk Model Page
+# ---------------------------
 elif page == "Injury Risk Model":
     st.title("🏃 Injury Risk Model")
     st.markdown("Estimate the workload threshold (Kg) associated with a target injury probability")
@@ -365,12 +367,12 @@ elif page == "Injury Risk Model":
         st.markdown(f"**Workload threshold (Kg)**: {w_star:.2f}")
         st.markdown(f"**95% CI**: [{ci_lower:.2f}, {ci_upper:.2f}]")
         st.markdown("---")
-        st.markdown(f"For an injury probability of **{prob_target_percent}%**, the estimated workload threshold is **{w_star:.2f}**.")
+        st.markdown(f"For an injury probability of **{prob_target_percent}%**, the estimated workload threshold is **{w_star:.2f} Kg**.")
 
     st.markdown("---")
 
     # --- Dataset Preview & Filters + Plots ---
-    with st.expander("🧮 Show simulated dataset"):
+    with st.expander("🧮 Show Raw Athlete Data"):
         st.markdown("### Filter Dataset")
         gender_options_injury = ["All"] + df_injury["Gender"].unique().tolist()
         selected_gender_injury = st.selectbox("Gender", gender_options_injury, key="gender_injury")
@@ -388,58 +390,65 @@ elif page == "Injury Risk Model":
         # Show filtered table
         st.dataframe(filtered_injury_df)
 
-        # ---- Plots ----
-        # Injury Rate by Age Group
-        st.markdown("### 📊 Injury Rate Across Age Groups")
+        # Create age groups
         filtered_injury_df["AgeGroup"] = pd.cut(
             filtered_injury_df["Age"], 
             bins=[15, 20, 25, 30, 35, 40], 
             labels=["16-20","21-25","26-30","31-35","36-40"]
         )
-        age_rate = filtered_injury_df.groupby("AgeGroup")["Injury"].mean().reset_index()
-        fig_age, ax_age = plt.subplots(figsize=(4,2.5))
-        sns.barplot(x="AgeGroup", y="Injury", data=age_rate, color="#d62728", ax=ax_age)
-        ax_age.set_ylabel("Injury Rate")
-        ax_age.set_xlabel("Age Group")
-        ax_age.tick_params(axis='x', rotation=45)
-        fig_age.tight_layout()
-        st.pyplot(fig_age)
 
-        # Injury Rate by Sport
-        st.markdown("### 🏅 Injury Rate by Sport")
-        sport_rate = filtered_injury_df.groupby("Sport")["Injury"].mean().reset_index()
-        fig_sport, ax_sport = plt.subplots(figsize=(4,2.5))
-        sns.barplot(x="Sport", y="Injury", data=sport_rate, palette="Set2", ax=ax_sport)
-        ax_sport.set_ylabel("Injury Rate")
-        ax_sport.set_xlabel("Sport")
-        ax_sport.tick_params(axis='x', rotation=45)
-        fig_sport.tight_layout()
-        st.pyplot(fig_sport)
+        # ---- Row 1 ----
+        col1, col2 = st.columns(2)
 
-        # Workload by Injury
-        st.markdown("### ⚡ Workload Distribution by Injury Status")
-        filtered_injury_df["Injury_str"] = filtered_injury_df["Injury"].map({0: "No", 1: "Yes"})
-        fig_workload, ax_workload = plt.subplots(figsize=(4,2.5))
-        sns.boxplot(
-            x="Injury_str",
-            y="Workload",
-            data=filtered_injury_df,
-            palette={"No": "#1f77b4", "Yes": "#d62728"},
-            ax=ax_workload
-        )
-        ax_workload.set_xlabel("Injury")
-        ax_workload.set_ylabel("Workload")
-        fig_workload.tight_layout()
-        st.pyplot(fig_workload)
+        with col1:
+            st.markdown("### 📊 Injury Rate Across Age Groups")
+            age_rate = filtered_injury_df.groupby("AgeGroup")["Injury"].mean().reset_index()
+            fig_age, ax_age = plt.subplots(figsize=(4.5, 3))
+            sns.barplot(x="AgeGroup", y="Injury", data=age_rate, color="#d62728", ax=ax_age)
+            ax_age.set_ylabel("Injury Rate")
+            ax_age.set_xlabel("Age Group")
+            ax_age.tick_params(axis='x', rotation=45)
+            fig_age.tight_layout()
+            st.pyplot(fig_age)
 
-        # Heatmap: Age × Sport
-        st.markdown("### 🔥 Injury Heatmap: Age × Sport")
-        heatmap_data = filtered_injury_df.pivot_table(
-            index="AgeGroup", columns="Sport", values="Injury", aggfunc="mean"
-        )
-        fig_heat, ax_heat = plt.subplots(figsize=(4,2.5))
-        sns.heatmap(heatmap_data, annot=False, fmt=".2f", cmap="Reds", linewidths=0.5, ax=ax_heat)
-        ax_heat.set_ylabel("Age Group")
-        ax_heat.set_xlabel("Sport")
-        fig_heat.tight_layout()
-        st.pyplot(fig_heat)
+        with col2:
+            st.markdown("### 🏅 Injury Rate by Sport")
+            sport_rate = filtered_injury_df.groupby("Sport")["Injury"].mean().reset_index()
+            fig_sport, ax_sport = plt.subplots(figsize=(4.5, 3))
+            sns.barplot(x="Sport", y="Injury", data=sport_rate, palette="Set2", ax=ax_sport)
+            ax_sport.set_ylabel("Injury Rate")
+            ax_sport.set_xlabel("Sport")
+            ax_sport.tick_params(axis='x', rotation=45)
+            fig_sport.tight_layout()
+            st.pyplot(fig_sport)
+
+        # ---- Row 2 ----
+        col3, col4 = st.columns(2)
+
+        with col3:
+            st.markdown("### ⚡ Workload Distribution by Injury Status")
+            filtered_injury_df["Injury_str"] = filtered_injury_df["Injury"].map({0: "No", 1: "Yes"})
+            fig_workload, ax_workload = plt.subplots(figsize=(4.5, 3))
+            sns.boxplot(
+                x="Injury_str",
+                y="Workload",
+                data=filtered_injury_df,
+                palette={"No": "#1f77b4", "Yes": "#d62728"},
+                ax=ax_workload
+            )
+            ax_workload.set_xlabel("Injury")
+            ax_workload.set_ylabel("Workload")
+            fig_workload.tight_layout()
+            st.pyplot(fig_workload)
+
+        with col4:
+            st.markdown("### 🔥 Injury Heatmap: Age × Sport")
+            heatmap_data = filtered_injury_df.pivot_table(
+                index="AgeGroup", columns="Sport", values="Injury", aggfunc="mean"
+            )
+            fig_heat, ax_heat = plt.subplots(figsize=(4.5, 3))
+            sns.heatmap(heatmap_data, annot=False, fmt=".2f", cmap="Reds", linewidths=0.5, ax=ax_heat)
+            ax_heat.set_ylabel("Age Group")
+            ax_heat.set_xlabel("Sport")
+            fig_heat.tight_layout()
+            st.pyplot(fig_heat)
