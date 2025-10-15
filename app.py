@@ -495,3 +495,88 @@ elif page == "Performance Prediction Model":
         (df_performance["BodyPart"] == body_part)
     ].sort_values("Date")
 
+    if filtered_df.empty:
+        st.warning("No records found for the selected combination.")
+    else:
+        st.markdown("### 🏋️ Training Sessions")
+        st.dataframe(filtered_df, use_container_width=True)
+        
+        # --- Compute workload per session ---
+        filtered_df["workload"] = filtered_df["Set"] * filtered_df["Rep"] * filtered_df["Load (kg)"]
+        daily_workload = filtered_df.groupby("Date")["workload"].sum().reset_index()
+        
+        # --- Compute fitness, fatigue, performance ---
+        fitness, fatigue, performance = [], [], []
+        for i, w in enumerate(daily_workload["workload"]):
+            if i == 0:
+                f_fit, f_fat = w, w
+            else:
+                f_fit = fitness[-1] * np.exp(-1 / tau_f) + w
+                f_fat = fatigue[-1] * np.exp(-1 / tau_d) + w
+            fitness.append(f_fit)
+            fatigue.append(f_fat)
+            performance.append(P0 + k1 * f_fit - k2 * f_fat)
+        
+        daily_workload["fitness"] = fitness
+        daily_workload["fatigue"] = fatigue
+        daily_workload["performance"] = performance
+        
+        # --- Plot performance ---
+        fig, ax = plt.subplots(figsize=(5, 3))
+        ax.plot(daily_workload["Date"], daily_workload["performance"], marker="o", color="blue")
+        ax.set_title("Performance Evolution")
+        ax.set_xlabel("Date")
+        ax.set_ylabel("Performance")
+        ax.grid(True, linestyle="--", alpha=0.6)
+        fig.tight_layout()
+        st.pyplot(fig)
+        
+        # --- Next week prediction ---
+        st.markdown("### 🔮 Predict Next Session Performance")
+        set_val = st.number_input("Set", value=4, min_value=1)
+        rep_val = st.number_input("Rep", value=8, min_value=1)
+        load_val = st.number_input("Load (kg)", value=20.0, min_value=0.0)
+        predict = st.button("Predict Next Performance")
+        
+        if predict:
+            w_new = set_val * rep_val * load_val
+            fitness_prev = fitness[-1]
+            fatigue_prev = fatigue[-1]
+            fitness_new = fitness_prev * np.exp(-1 / tau_f) + w_new
+            fatigue_new = fatigue_prev * np.exp(-1 / tau_d) + w_new
+            performance_new = P0 + k1 * fitness_new - k2 * fatigue_new
+
+            perf_change = (performance_new - performance[-1]) / performance[-1] * 100 if performance[-1] != 0 else 0
+            
+            # --- Display results ---
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                fig2, ax2 = plt.subplots(figsize=(5, 3))
+                ax2.plot(daily_workload["Date"], daily_workload["performance"], marker="o", label="Observed")
+                ax2.plot(
+                    [daily_workload["Date"].iloc[-1], daily_workload["Date"].iloc[-1] + pd.Timedelta(days=7)],
+                    [performance[-1], performance_new],
+                    color="red", marker="o", linestyle="--", label="Predicted"
+                )
+                ax2.legend()
+                ax2.set_title("Next Performance Forecast")
+                ax2.set_xlabel("Date")
+                ax2.set_ylabel("Performance")
+                ax2.grid(True, linestyle="--", alpha=0.5)
+                fig2.tight_layout()
+                st.pyplot(fig2)
+
+            with col2:
+                st.metric(label="Predicted Performance", value=f"{performance_new:.2f}")
+                st.metric(label="Change (%)", value=f"{perf_change:.2f}%")
+
+
+
+
+
+
+
+
+
+
+
