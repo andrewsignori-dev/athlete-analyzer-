@@ -302,14 +302,7 @@ elif page == "Injury Risk Model":
     fig_height = 3
     font_size = 6
 
-    # Simulate dataset once
-    np.random.seed(42)
-    n = 300
-    workload = np.random.uniform(0, 30, n)
-    beta0, beta1 = -3.0, 0.15
-    p = 1 / (1 + np.exp(-(beta0 + beta1 * workload)))
-    injury = np.random.binomial(1, p)
-    df_injury = pd.DataFrame({"workload": workload, "injury": injury})
+    df_injury = pd.read_excel("synthetic_athlete_injury.xlsx")
 
     # Fit logistic model
     X = sm.add_constant(df_injury["workload"])
