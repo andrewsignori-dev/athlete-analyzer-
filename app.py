@@ -425,8 +425,6 @@ elif page == "Injury Risk Model":
     # Workload by Injury
     st.markdown("### ⚡ Workload Distribution by Injury Status")
     filtered_injury_df["Injury_str"] = filtered_injury_df["Injury"].map({0: "No", 1: "Yes"})
-    # Map Injury to string
-    filtered_injury_df["Injury_str"] = filtered_injury_df["Injury"].map({0: "No", 1: "Yes"})
 
     # Only keep colors for values present
     present_values = filtered_injury_df["Injury_str"].unique().tolist()
