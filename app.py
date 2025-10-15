@@ -220,7 +220,7 @@ with st.expander("🏅 Evaluate a New Athlete"):
                                label="New Athlete" if i == 0 else "")
     ax_box_overlay.legend(fontsize=font_size)
     fig_box_overlay.tight_layout()
-    st.
+    st.pyplot(fig_box_overlay)
 
 
 
