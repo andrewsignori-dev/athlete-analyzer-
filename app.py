@@ -10,7 +10,7 @@ from scipy.special import logit
 # ---------------------------
 # Page Configuration
 # ---------------------------
-st.set_page_config(page_title="Athlete Ability", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Athlete Ability", layout="centered", initial_sidebar_state="expanded")
 
 # Load dataset
 df = pd.read_excel("synthetic_athlete_dataset.xlsx")
@@ -54,9 +54,9 @@ sns.set_theme(style="whitegrid")
 # ---------------------------
 # Small Figure Sizes
 # ---------------------------
-fig_width = 2.5
-fig_height = 1
-font_size = 3
+fig_width = 4.5
+fig_height = 3
+font_size = 6
 
 # ---------------------------
 # Athlete Ability Page
