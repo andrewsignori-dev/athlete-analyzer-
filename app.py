@@ -450,6 +450,6 @@ elif page == "Injury Risk Model":
             sns.heatmap(heatmap_data, annot=False, fmt=".2f", cmap="Reds", linewidths=0.5, ax=ax_heat)
             ax_heat.set_ylabel("Age Group")
             ax_heat.set_xlabel("Sport")
-            ax_heat.yticks(rotate=45)
+            ax_heat.set_yticklabels(ax_heat.get_yticklabels(), rotation=45)
             fig_heat.tight_layout()
             st.pyplot(fig_heat)
