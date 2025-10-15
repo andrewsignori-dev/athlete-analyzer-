@@ -29,23 +29,6 @@ df_scaled[abilities] = scaler.fit_transform(df[abilities])
 st.sidebar.title("⚡ Athlete Dashboard Filters")
 page = st.sidebar.radio("Navigate to", ["Athlete Ability", "Injury Risk Model", "Performance Prediction Model"])
 
-
-st.sidebar.header("Filter Athletes")
-gender_options = ["All"] + df_scaled["Gender"].unique().tolist()
-selected_gender = st.sidebar.selectbox("Gender", gender_options)
-sport_options = ["All"] + df_scaled["Sport"].unique().tolist()
-selected_sport = st.sidebar.selectbox("Sport", sport_options)
-min_age, max_age = int(df_scaled["Age"].min()), int(df_scaled["Age"].max())
-selected_age = st.sidebar.slider("Age Range", min_age, max_age, (min_age, max_age))
-
-# Apply filters
-filtered_df = df_scaled.copy()
-if selected_gender != "All":
-    filtered_df = filtered_df[filtered_df["Gender"] == selected_gender]
-if selected_sport != "All":
-    filtered_df = filtered_df[filtered_df["Sport"] == selected_sport]
-filtered_df = filtered_df[(filtered_df["Age"] >= selected_age[0]) & (filtered_df["Age"] <= selected_age[1])]
-
 # ---------------------------
 # Seaborn theme
 # ---------------------------
