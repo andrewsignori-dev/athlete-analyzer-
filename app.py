@@ -371,11 +371,10 @@ elif page == "Injury Risk Model":
         st.markdown(f"For an injury probability of **{prob_target_percent}%**, the estimated workload threshold is **{w_star:.2f}**.")
 
     st.markdown("---")
+    
+    # --- Dataset Preview & Filters ---
+    with st.expander("🧮 Show simulated dataset"):
 
-   # --- Row 2: Dataset Preview & Interactive Exploratory Plots ---
-   with st.expander("🧮 Show simulated dataset and exploratory analysis"):
-
-        # --- Filters ---
         st.markdown("### Filter Dataset")
         gender_options_injury = ["All"] + df_injury["Gender"].unique().tolist()
         selected_gender_injury = st.selectbox("Gender", gender_options_injury, key="gender_injury")
@@ -383,14 +382,12 @@ elif page == "Injury Risk Model":
         sport_options_injury = ["All"] + df_injury["Sport"].unique().tolist()
         selected_sport_injury = st.selectbox("Sport", sport_options_injury, key="sport_injury")
 
-       # Apply filters
-       filtered_injury_df = df_injury.copy()
-       if selected_gender_injury != "All":
-           filtered_injury_df = filtered_injury_df[filtered_injury_df["Gender"] == selected_gender_injury]
-       if selected_sport_injury != "All":
-        filtered_injury_df = filtered_injury_df[filtered_injury_df["Sport"] == selected_sport_injury]
+        # Apply filters
+        filtered_injury_df = df_injury.copy()
+        if selected_gender_injury != "All":
+            filtered_injury_df = filtered_injury_df[filtered_injury_df["Gender"] == selected_gender_injury]
+        if selected_sport_injury != "All":
+            filtered_injury_df = filtered_injury_df[filtered_injury_df["Sport"] == selected_sport_injury]
 
-       # Show filtered table
-       st.dataframe(filtered_injury_df)
-
- 
+        # Show filtered table
+        st.dataframe(filtered_injury_df)
