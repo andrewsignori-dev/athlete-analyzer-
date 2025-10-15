@@ -4,6 +4,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 import numpy as np
+import statsmodels.api as sm
+from scipy.special import logit
 
 # ---------------------------
 # Page Configuration
@@ -25,7 +27,8 @@ df_scaled[abilities] = scaler.fit_transform(df[abilities])
 # Sidebar Filters
 # ---------------------------
 st.sidebar.title("⚡ Athlete Dashboard Filters")
-page = st.sidebar.radio("Navigate to", ["Athlete Ability", "Raw Data"])
+page = st.sidebar.radio("Navigate to", ["Athlete Ability", "Raw Data", "Injury Risk Model"])
+
 
 st.sidebar.header("Filter Athletes")
 gender_options = ["All"] + df_scaled["Gender"].unique().tolist()
@@ -272,6 +275,98 @@ elif page == "Raw Data":
     # Leave second column empty for alignment
     with col2:
         st.write("")  # empty space
+
+# ---------------------------
+# Injury Risk Model Page
+# ---------------------------
+elif page == "Injury Risk Model":
+    st.title("🏃 Injury Risk Model")
+    st.markdown("Estimate the workload threshold (**w*** ) associated with a target injury probability")
+    st.markdown("---")
+
+
+    # Use the same Seaborn theme and figure sizing
+    sns.set_theme(style="whitegrid")
+    fig_width = 4.5
+    fig_height = 3
+    font_size = 6
+
+    # Simulate dataset once
+    np.random.seed(42)
+    n = 300
+    workload = np.random.uniform(0, 30, n)
+    beta0, beta1 = -3.0, 0.15
+    p = 1 / (1 + np.exp(-(beta0 + beta1 * workload)))
+    injury = np.random.binomial(1, p)
+    df_injury = pd.DataFrame({"workload": workload, "injury": injury})
+
+    # Fit logistic model
+    X = sm.add_constant(df_injury["workload"])
+    y = df_injury["injury"]
+    model = sm.Logit(y, X).fit(disp=False)
+    beta0_hat, beta1_hat = model.params
+
+    # Sidebar-like slider for target probability
+    prob_target_percent = st.slider(
+        "🎯 Target injury probability (%)",
+        min_value=0,
+        max_value=100,
+        value=20,
+        step=1,
+        help="Select the target injury probability to compute the workload threshold (w*)."
+    )
+
+    # Compute w* and bootstrap CI
+    X_target = prob_target_percent / 100
+    w_star = (logit(X_target) - beta0_hat) / beta1_hat
+
+    B = 200
+    w_star_boot = []
+    for _ in range(B):
+        sample = df_injury.sample(n=len(df_injury), replace=True)
+        Xb = sm.add_constant(sample["workload"])
+        yb = sample["injury"]
+        try:
+            mb = sm.Logit(yb, Xb).fit(disp=False)
+            b0, b1 = mb.params
+            w_b = (logit(X_target) - b0) / b1
+            w_star_boot.append(w_b)
+        except:
+            continue
+
+    ci_lower, ci_upper = np.percentile(w_star_boot, [2.5, 97.5])
+
+    # --- Row 1: Plot and Results ---
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        work_range = np.linspace(0, 30, 200)
+        p_pred = 1 / (1 + np.exp(-(beta0_hat + beta1_hat * work_range)))
+
+        fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+        ax.scatter(df_injury["workload"], df_injury["injury"], alpha=0.3, color="#1f77b4", label="Data")
+        ax.plot(work_range, p_pred, color="#d62728", linewidth=1.5, label="Predicted Probability")
+        ax.axvline(w_star, color="#2ca02c", linestyle="--", label=f"w* = {w_star:.2f}")
+        ax.set_xlabel("Workload", fontsize=font_size)
+        ax.set_ylabel("Injury Probability", fontsize=font_size)
+        ax.tick_params(axis='x', labelsize=font_size)
+        ax.tick_params(axis='y', labelsize=font_size)
+        ax.legend(fontsize=font_size)
+        fig.tight_layout()
+        st.pyplot(fig)
+
+    with col2:
+        st.subheader("📋 Results")
+        st.markdown(f"**Workload threshold (w\\*)**: {w_star:.2f}")
+        st.markdown(f"**95% CI**: [{ci_lower:.2f}, {ci_upper:.2f}]")
+        st.markdown("---")
+        st.markdown(f"For an injury probability of **{prob_target_percent}%**, the estimated workload threshold is **{w_star:.2f}**.")
+
+    st.markdown("---")
+
+    # --- Row 2: Dataset Preview ---
+    with st.expander("🧮 Show simulated dataset"):
+        st.dataframe(df_injury)
 
 
 
