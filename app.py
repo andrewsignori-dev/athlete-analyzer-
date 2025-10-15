@@ -27,7 +27,7 @@ df_scaled[abilities] = scaler.fit_transform(df[abilities])
 # Sidebar Filters
 # ---------------------------
 st.sidebar.title("⚡ Athlete Dashboard Filters")
-page = st.sidebar.radio("Navigate to", ["Athlete Ability", "Injury Risk Model"])
+page = st.sidebar.radio("Navigate to", ["Athlete Ability", "Injury Risk Model", "Additional model"])
 
 
 st.sidebar.header("Filter Athletes")
@@ -391,3 +391,88 @@ elif page == "Injury Risk Model":
 
         # Show filtered table
         st.dataframe(filtered_injury_df)
+
+# ---------------------------
+# Injury Risk Model Page
+# ---------------------------
+elif page == "Additional model":
+    st.title("🏃 Injury Risk Model")
+    st.markdown("Estimate the workload threshold (Kg) associated with a target injury probability")
+    st.markdown("---")
+
+    # Seaborn theme and figure sizing
+    sns.set_theme(style="whitegrid")
+    fig_width = 4.5
+    fig_height = 3
+    font_size = 6
+
+    df_injury = pd.read_excel("synthetic_athlete_injury.xlsx")
+
+    # Fit logistic model
+    X = sm.add_constant(df_injury["Workload"])
+    y = df_injury["Injury"]
+    model = sm.Logit(y, X).fit(disp=False)
+    beta0_hat, beta1_hat = model.params
+
+    # Sidebar-like slider for target probability
+    prob_target_percent = st.slider(
+        "🎯 Target injury probability (%)",
+        min_value=0,
+        max_value=100,
+        value=20,
+        step=1,
+        help="Select the target injury probability to compute the workload threshold (Kg)."
+    )
+
+    # Compute threshold and bootstrap CI
+    X_target = prob_target_percent / 100
+    w_star = (logit(X_target) - beta0_hat) / beta1_hat
+
+    B = 200
+    w_star_boot = []
+    for _ in range(B):
+        sample = df_injury.sample(n=len(df_injury), replace=True)
+        Xb = sm.add_constant(sample["Workload"])
+        yb = sample["Injury"]
+        try:
+            mb = sm.Logit(yb, Xb).fit(disp=False)
+            b0, b1 = mb.params
+            w_b = (logit(X_target) - b0) / b1
+            w_star_boot.append(w_b)
+        except:
+            continue
+
+    ci_lower, ci_upper = np.percentile(w_star_boot, [2.5, 97.5])
+
+    # --- Row 1: Plot and Results ---
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        work_range = np.linspace(0, 30, 200)
+        p_pred = 1 / (1 + np.exp(-(beta0_hat + beta1_hat * work_range)))
+
+        fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+        ax.scatter(df_injury["Workload"], df_injury["Injury"],
+                   alpha=0.4, s=40, color="#1f77b4", label="Observed Data", edgecolor="w")
+        ax.plot(work_range, p_pred, color="#d62728", linewidth=2, label="Predicted Probability")
+        ax.fill_between(work_range, 0, p_pred, color="#d62728", alpha=0.1)
+        ax.axvline(w_star, color="#2ca02c", linestyle="--", linewidth=2,
+                   label=f"Optimal Workload (w*) = {w_star:.2f}")
+        ax.scatter(w_star, np.interp(w_star, work_range, p_pred), color="#2ca02c", s=80, zorder=5)
+        ax.set_xlabel("Workload", fontsize=font_size+2, weight='bold')
+        ax.set_ylabel("Injury Probability", fontsize=font_size+2, weight='bold')
+        ax.tick_params(axis='x', labelsize=font_size)
+        ax.tick_params(axis='y', labelsize=font_size)
+        ax.grid(alpha=0.3, linestyle='--')
+        ax.legend(fontsize=font_size, frameon=True, facecolor='white', edgecolor='black')
+        fig.tight_layout()
+        st.pyplot(fig)
+
+    with col2:
+        st.subheader("📋 Results")
+        st.markdown(f"**Workload threshold (Kg)**: {w_star:.2f}")
+        st.markdown(f"**95% CI**: [{ci_lower:.2f}, {ci_upper:.2f}]")
+        st.markdown("---")
+        st.markdown(f"For an injury probability of **{prob_target_percent}%**, the estimated workload threshold is **{w_star:.2f}**.")
+
+    st.markdown("---")
