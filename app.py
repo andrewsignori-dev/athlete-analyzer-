@@ -393,7 +393,7 @@ elif page == "Injury Risk Model":
         st.markdown("### 📊 Injury Rate Across Age Groups")
         filtered_injury_df["AgeGroup"] = pd.cut(
             filtered_injury_df["Age"], 
-            bins=[15, 20, 25, 30, 35, 40, 45], 
+            bins=[15, 20, 25, 30, 35, 40], 
             labels=["16-20","21-25","26-30","31-35","36-40"]
         )
         age_rate = filtered_injury_df.groupby("AgeGroup")["Injury"].mean().reset_index()
