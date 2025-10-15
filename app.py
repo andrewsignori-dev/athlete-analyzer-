@@ -372,9 +372,92 @@ elif page == "Injury Risk Model":
 
     st.markdown("---")
 
-    # --- Row 2: Dataset Preview ---
-    with st.expander("🧮 Show simulated dataset"):
-        st.dataframe(df_injury)
+# --- Row 2: Dataset Preview and Exploratory Plots ---
+with st.expander("🧮 Show simulated dataset and explore injury patterns"):
+    st.dataframe(df_injury)
+
+    st.markdown("### 🔍 Exploratory Analysis")
+
+    fig_width = 4.5
+    fig_height = 3
+    font_size = 6
+
+    # --- Row 1: Injury Rate by Sport & Age Histogram ---
+    col1, col2 = st.columns(2)
+
+    # Injury rate by Sport
+    with col1:
+        injury_by_sport = df_injury.groupby("Sport")["Injury"].mean().sort_values(ascending=False)
+        fig_sport, ax_sport = plt.subplots(figsize=(fig_width, fig_height))
+        sns.barplot(x=injury_by_sport.index, y=injury_by_sport.values, palette="Set2", ax=ax_sport)
+        ax_sport.set_ylabel("Injury Rate", fontsize=font_size)
+        ax_sport.set_xlabel("Sport", fontsize=font_size)
+        ax_sport.tick_params(axis='x', rotation=45, labelsize=font_size)
+        ax_sport.tick_params(axis='y', labelsize=font_size)
+        ax_sport.set_ylim(0, 1)
+        fig_sport.tight_layout()
+        st.subheader("🏅 Injury Rate by Sport")
+        st.pyplot(fig_sport)
+
+    # Age histogram colored by injury
+    with col2:
+        fig_age, ax_age = plt.subplots(figsize=(fig_width, fig_height))
+        sns.histplot(
+            data=df_injury,
+            x="Age",
+            hue="Injury",
+            multiple="stack",
+            palette={0: "#1f77b4", 1: "#d62728"},
+            bins=10,
+            alpha=0.7,
+            ax=ax_age
+        )
+        ax_age.set_xlabel("Age", fontsize=font_size)
+        ax_age.set_ylabel("Count", fontsize=font_size)
+        ax_age.tick_params(axis='x', labelsize=font_size)
+        ax_age.tick_params(axis='y', labelsize=font_size)
+        fig_age.tight_layout()
+        st.subheader("👶 Age Distribution by Injury")
+        st.pyplot(fig_age)
+
+    st.markdown("---")
+
+    # --- Row 2: Injury vs Workload by Sport ---
+    col1, col2 = st.columns(2)
+
+    # Boxplot of workload by injury status
+    with col1:
+        fig_workload, ax_workload = plt.subplots(figsize=(fig_width, fig_height))
+        sns.boxplot(x="Injury", y="Workload", data=df_injury, palette={0: "#1f77b4", 1: "#d62728"}, ax=ax_workload)
+        ax_workload.set_xlabel("Injury", fontsize=font_size)
+        ax_workload.set_ylabel("Workload", fontsize=font_size)
+        ax_workload.tick_params(axis='x', labelsize=font_size)
+        ax_workload.tick_params(axis='y', labelsize=font_size)
+        fig_workload.tight_layout()
+        st.subheader("🏋️ Workload by Injury Status")
+        st.pyplot(fig_workload)
+
+    # Scatter plot of Workload vs Age colored by Injury
+    with col2:
+        fig_scatter, ax_scatter = plt.subplots(figsize=(fig_width, fig_height))
+        sns.scatterplot(
+            data=df_injury,
+            x="Age",
+            y="Workload",
+            hue="Injury",
+            palette={0: "#1f77b4", 1: "#d62728"},
+            alpha=0.6,
+            ax=ax_scatter
+        )
+        ax_scatter.set_xlabel("Age", fontsize=font_size)
+        ax_scatter.set_ylabel("Workload", fontsize=font_size)
+        ax_scatter.tick_params(axis='x', labelsize=font_size)
+        ax_scatter.tick_params(axis='y', labelsize=font_size)
+        ax_scatter.legend(title="Injury", fontsize=font_size-1, title_fontsize=font_size)
+        fig_scatter.tight_layout()
+        st.subheader("📊 Workload vs Age by Injury")
+        st.pyplot(fig_scatter)
+
 
 
 
