@@ -10,7 +10,7 @@ from scipy.special import logit
 # ---------------------------
 # Page Configuration
 # ---------------------------
-st.set_page_config(page_title="Athlete Ability", layout="centered", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Athlete Ability", layout="wide", initial_sidebar_state="expanded")
 
 # Load dataset
 df = pd.read_excel("synthetic_athlete_dataset.xlsx")
@@ -27,7 +27,7 @@ df_scaled[abilities] = scaler.fit_transform(df[abilities])
 # Sidebar Filters
 # ---------------------------
 st.sidebar.title("⚡ Athlete Dashboard Filters")
-page = st.sidebar.radio("Navigate to", ["Athlete Ability", "Injury Risk Model", "Additional model"])
+page = st.sidebar.radio("Navigate to", ["Athlete Ability", "Injury Risk Model", "Performance Prediction Model"])
 
 
 st.sidebar.header("Filter Athletes")
