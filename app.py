@@ -462,10 +462,10 @@ elif page == "Performance Prediction Model":
     st.markdown("Estimate next week’s performance based on training volume and workload parameters.")
     st.markdown("---")
 
-    # --- Parameters ---
-    tau_f = st.number_input("🏋️‍♂️ Fatigue time constant (τ_f)", value=10.0, min_value=1.0)
-    tau_d = st.number_input("💪 Fitness time constant (τ_d)", value=30.0, min_value=1.0)
-    P0 = st.number_input("⚙️ Base performance level (P₀)", value=100.0)
-    k1 = st.number_input("📈 Fitness coefficient (k₁)", value=0.01)
-    k2 = st.number_input("📉 Fatigue coefficient (k₂)", value=0.015)
-    st.markdown("---")
+    # --- Fixed Model Parameters ---
+    tau_f = 45 / 7     # fitness time constant
+    tau_d = 10 / 7     # fatigue time constant
+    P0 = 0              # base performance
+    k1 = 1              # fitness coefficient
+    k2 = 1.5            # fatigue coefficient
+
