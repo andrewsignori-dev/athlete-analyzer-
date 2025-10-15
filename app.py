@@ -429,9 +429,9 @@ with st.expander("🧮 Show simulated dataset and exploratory analysis"):
     sns.boxplot(
         x="Injury_str",
         y="Workload",
+        hue="Gender",
         data=filtered_injury_df,
         palette={"No": "#1f77b4", "Yes": "#d62728"},
-        hue='Gender',
         ax=ax_workload
     )
     ax_workload.set_xlabel("Injury", fontsize=font_size)
