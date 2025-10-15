@@ -81,7 +81,7 @@ if page == "Athlete Ability":
         ax_bar.tick_params(axis='x', labelsize=font_size)
         ax_bar.tick_params(axis='y', labelsize=font_size)
         fig_bar.tight_layout()
-        st.subheader("📊 Average Abilities", anchor=None)
+        st.subheader("📊 Average Abilities")
         st.pyplot(fig_bar)
 
     # Box Plot
@@ -137,11 +137,8 @@ if page == "Athlete Ability":
         st.markdown("Input ability levels for a new athlete and compare them to the reference group.")
         st.markdown("---")
 
-        # ---------------------------
-        # Select reference group for comparison
-        # ---------------------------
+        # Reference group selection
         ref_group = st.selectbox("Reference Group", ["All", "Gender", "Sport"])
-
         if ref_group == "All":
             ref_df = filtered_df.copy()
             legend_label = "Dataset Average"
@@ -174,7 +171,6 @@ if page == "Athlete Ability":
         differences = new_values - avg_values_ref
         above = differences[differences > 0].index.tolist()
         below = differences[differences < 0].index.tolist()
-
         summary_text = ""
         if above:
             summary_text += f"**Above average in:** {', '.join(above)}  \n"
@@ -182,10 +178,9 @@ if page == "Athlete Ability":
             summary_text += f"**Below average in:** {', '.join(below)}  \n"
         if not above and not below:
             summary_text = "This athlete's abilities are around the reference group average."
-
         st.markdown(summary_text)
 
-        # --- Comparison Bar Chart ---
+        # Comparison Bar Chart
         st.subheader("📊 Comparison to Reference Average")
         fig_bar_eval, ax_bar_eval = plt.subplots(figsize=(3.5, 2))
         x = np.arange(len(abilities))
@@ -201,7 +196,7 @@ if page == "Athlete Ability":
         fig_bar_eval.tight_layout()
         st.pyplot(fig_bar_eval)
 
-        # --- Boxplot overlay with new athlete point ---
+        # Boxplot overlay
         st.subheader("📡 Percentile Placement")
         fig_box_overlay, ax_box_overlay = plt.subplots(figsize=(3.5, 2))
         melted_ref = ref_df.melt(id_vars=["AthleteID"], value_vars=abilities, var_name="Ability", value_name="Z-Score")
@@ -219,7 +214,7 @@ if page == "Athlete Ability":
         ax_box_overlay.legend(fontsize=font_size)
         fig_box_overlay.tight_layout()
         st.pyplot(fig_box_overlay)
-    
+
     # ---------------------------
     # Raw Data (Collapsible Section)
     # ---------------------------
@@ -227,13 +222,11 @@ if page == "Athlete Ability":
         st.markdown("Filter and explore the raw data independently from the main dashboard.")
         st.markdown("---")
 
-        # --- Filters inside expander ---
+        # Filters
         gender_options_raw = ["All"] + df["Gender"].unique().tolist()
         selected_gender_raw = st.selectbox("Filter by Gender", gender_options_raw, key="gender_raw")
-
         sport_options_raw = ["All"] + df["Sport"].unique().tolist()
         selected_sport_raw = st.selectbox("Filter by Sport", sport_options_raw, key="sport_raw")
-
         min_age_raw, max_age_raw = int(df["Age"].min()), int(df["Age"].max())
         selected_age_raw = st.slider("Filter by Age Range", min_age_raw, max_age_raw, (min_age_raw, max_age_raw), key="age_raw")
 
@@ -243,41 +236,32 @@ if page == "Athlete Ability":
             filtered_df_raw = filtered_df_raw[filtered_df_raw["Gender"] == selected_gender_raw]
         if selected_sport_raw != "All":
             filtered_df_raw = filtered_df_raw[filtered_df_raw["Sport"] == selected_sport_raw]
-        filtered_df_raw = filtered_df_raw[
-        (filtered_df_raw["Age"] >= selected_age_raw[0]) & 
-        (filtered_df_raw["Age"] <= selected_age_raw[1])
-         ]
+        filtered_df_raw = filtered_df_raw[(filtered_df_raw["Age"] >= selected_age_raw[0]) & 
+                                          (filtered_df_raw["Age"] <= selected_age_raw[1])]
 
-         # --- Show filtered table ---
-         st.dataframe(filtered_df_raw)
+        # Show filtered table
+        st.dataframe(filtered_df_raw)
 
-         # --- Compact figure size ---
-         fig_width_raw = 4
-         fig_height_raw = 2
-         label_fontsize = 6
+        # Compact plots
+        fig_width_raw = 4
+        fig_height_raw = 2
+        label_fontsize = 6
 
-         # --- Row 1: Gender Pie & Age Histogram ---
-         col1, col2 = st.columns(2)
+        # --- Row 1: Gender Pie & Age Histogram ---
+        col1, col2 = st.columns(2)
 
-         # Gender Pie Chart
-         with col1:
-             counts = filtered_df_raw["Gender"].value_counts()
-             fig_pie, ax_pie = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
-             ax_pie.pie(
-             counts,
-             labels=counts.index,
-             autopct="%1.1f%%",
-             colors=sns.color_palette("Set2"),
-             startangle=90,
-             textprops={'fontsize': label_fontsize}
-             )
-             fig_pie.tight_layout()
-             st.subheader("🥧 Gender Distribution")
-             st.pyplot(fig_pie)
+        with col1:
+            counts = filtered_df_raw["Gender"].value_counts()
+            fig_pie, ax_pie = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
+            ax_pie.pie(counts, labels=counts.index, autopct="%1.1f%%",
+                       colors=sns.color_palette("Set2"), startangle=90,
+                       textprops={'fontsize': label_fontsize})
+            fig_pie.tight_layout()
+            st.subheader("🥧 Gender Distribution")
+            st.pyplot(fig_pie)
 
-         # Age Histogram
-         with col2:
-             fig_age, ax_age = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
+        with col2:
+            fig_age, ax_age = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
             sns.histplot(filtered_df_raw["Age"], bins=10, kde=False, color="#1f77b4", ax=ax_age)
             ax_age.set_xlabel("Age")
             ax_age.set_ylabel("Count")
@@ -285,27 +269,24 @@ if page == "Athlete Ability":
             st.subheader("📊 Age Distribution")
             st.pyplot(fig_age)
 
-         st.markdown("---")
+        st.markdown("---")
 
-         # --- Row 2: Sport Pie Chart ---
-         col1, col2 = st.columns(2)
-         with col1:
-             sport_counts = filtered_df_raw["Sport"].value_counts()
-             fig_sport, ax_sport = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
-             ax_sport.pie(
-             sport_counts,
-             labels=sport_counts.index,
-             autopct="%1.1f%%",
-             colors=sns.color_palette("Set2"),
-             startangle=90,
-             textprops={'fontsize': label_fontsize}
-             )
+        # --- Row 2: Sport Pie Chart ---
+        col1, col2 = st.columns(2)
+
+        with col1:
+            sport_counts = filtered_df_raw["Sport"].value_counts()
+            fig_sport, ax_sport = plt.subplots(figsize=(fig_width_raw, fig_height_raw))
+            ax_sport.pie(sport_counts, labels=sport_counts.index, autopct="%1.1f%%",
+                         colors=sns.color_palette("Set2"), startangle=90,
+                         textprops={'fontsize': label_fontsize})
             fig_sport.tight_layout()
             st.subheader("🏅 Sport Distribution")
             st.pyplot(fig_sport)
 
-         with col2:
-             st.write("")  # empty space for alignment
+        with col2:
+            st.write("")  # empty space for alignment
+
 
 
 
