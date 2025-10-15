@@ -430,9 +430,9 @@ with st.expander("🧮 Show simulated dataset and exploratory analysis"):
    sns.boxplot(
     x="Injury_str",
     y="Workload",
-    hue="Gender",
+    #hue="Gender",
     data=filtered_injury_df,
-    palette=sns.color_palette("Set2"),  # Let Seaborn handle colors dynamically
+    palette=sns.color_palette("Set2"), 
     ax=ax_workload
    )
 
@@ -440,7 +440,7 @@ with st.expander("🧮 Show simulated dataset and exploratory analysis"):
    ax_workload.set_ylabel("Workload", fontsize=font_size)
    ax_workload.tick_params(axis='x', labelsize=font_size)
    ax_workload.tick_params(axis='y', labelsize=font_size)
-   ax_workload.legend(title="Gender", fontsize=font_size-1, title_fontsize=font_size-1)
+   #ax_workload.legend(title="Gender", fontsize=font_size-1, title_fontsize=font_size-1)
    fig_workload.tight_layout()
    st.pyplot(fig_workload)
 
