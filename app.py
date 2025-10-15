@@ -422,29 +422,6 @@ with st.expander("🧮 Show simulated dataset and exploratory analysis"):
     fig_sport.tight_layout()
     st.pyplot(fig_sport)
 
-   # Workload by Injury and Gender
-   st.markdown("### ⚡ Workload Distribution by Injury Status and Gender")
-   filtered_injury_df["Injury_str"] = filtered_injury_df["Injury"].map({0: "No", 1: "Yes"})
-
-   fig_workload, ax_workload = plt.subplots(figsize=(fig_width_small, fig_height_small))
-   sns.boxplot(
-    x="Injury_str",
-    y="Workload",
-    #hue="Gender",
-    data=filtered_injury_df,
-    palette=sns.color_palette("Set2"), 
-    ax=ax_workload
-   )
-
-   ax_workload.set_xlabel("Injury", fontsize=font_size)
-   ax_workload.set_ylabel("Workload", fontsize=font_size)
-   ax_workload.tick_params(axis='x', labelsize=font_size)
-   ax_workload.tick_params(axis='y', labelsize=font_size)
-   #ax_workload.legend(title="Gender", fontsize=font_size-1, title_fontsize=font_size-1)
-   fig_workload.tight_layout()
-   st.pyplot(fig_workload)
-
-
     # Heatmap Age × Sport
     st.markdown("### 🔥 Injury Heatmap: Age × Sport")
     heatmap_data = filtered_injury_df.pivot_table(index="AgeGroup", columns="Sport", values="Injury", aggfunc="mean")
