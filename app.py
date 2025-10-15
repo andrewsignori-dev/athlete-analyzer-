@@ -453,3 +453,19 @@ elif page == "Injury Risk Model":
             ax_heat.set_yticklabels(ax_heat.get_yticklabels(), rotation=45)
             fig_heat.tight_layout()
             st.pyplot(fig_heat)
+
+# -----------------------------------------------------------
+# --- PERFORMANCE PREDICTION MODEL PAGE ---
+# -----------------------------------------------------------
+elif page == "Performance Prediction Model":
+    st.title("📈 Performance Prediction Model")
+    st.markdown("Estimate next week’s performance based on training volume and workload parameters.")
+    st.markdown("---")
+
+    # --- Parameters ---
+    tau_f = st.number_input("🏋️‍♂️ Fatigue time constant (τ_f)", value=10.0, min_value=1.0)
+    tau_d = st.number_input("💪 Fitness time constant (τ_d)", value=30.0, min_value=1.0)
+    P0 = st.number_input("⚙️ Base performance level (P₀)", value=100.0)
+    k1 = st.number_input("📈 Fitness coefficient (k₁)", value=0.01)
+    k2 = st.number_input("📉 Fatigue coefficient (k₂)", value=0.015)
+    st.markdown("---")
