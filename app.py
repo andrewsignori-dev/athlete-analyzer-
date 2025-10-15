@@ -49,20 +49,22 @@ if page == "Athlete Ability":
     st.markdown("Explore standardized abilities of athletes and evaluate a new athlete.")
     st.markdown("---")
 
-    # --- Sidebar Filters ---
-    st.sidebar.header("Filter Athletes")
+    # --- In-page Filters ---
+    st.subheader("🎯 Filter Athletes")
 
-    # Gender filter
-    gender_options = ["All"] + df_scaled["Gender"].unique().tolist()
-    selected_gender = st.sidebar.selectbox("Gender", gender_options)
+    col1, col2, col3 = st.columns(3)
 
-    # Sport filter
-    sport_options = ["All"] + df_scaled["Sport"].unique().tolist()
-    selected_sport = st.sidebar.selectbox("Sport", sport_options)
+    with col1:
+        gender_options = ["All"] + df_scaled["Gender"].unique().tolist()
+        selected_gender = st.selectbox("Gender", gender_options)
 
-    # Age filter
-    min_age, max_age = int(df_scaled["Age"].min()), int(df_scaled["Age"].max())
-    selected_age = st.sidebar.slider("Age Range", min_age, max_age, (min_age, max_age))
+    with col2:
+        sport_options = ["All"] + df_scaled["Sport"].unique().tolist()
+        selected_sport = st.selectbox("Sport", sport_options)
+
+    with col3:
+        min_age, max_age = int(df_scaled["Age"].min()), int(df_scaled["Age"].max())
+        selected_age = st.slider("Age Range", min_age, max_age, (min_age, max_age))
 
     # --- Apply filters ---
     filtered_df = df_scaled.copy()
@@ -75,23 +77,27 @@ if page == "Athlete Ability":
         (filtered_df["Age"] <= selected_age[1])
     ]
 
-    # --- Display results ---
+    st.markdown("---")
+
+    # --- Display Filtered Results ---
     st.subheader("📊 Filtered Athlete Dataset")
-    st.write(f"**Total athletes:** {len(filtered_df)}")
+    st.write(f"**Total Athletes:** {len(filtered_df)}")
     st.dataframe(filtered_df, use_container_width=True)
 
-    # Optionally add visual summaries (e.g., distribution plots)
+    # --- Optional Summary Section ---
     st.markdown("### 🧭 Summary Insights")
     col1, col2 = st.columns(2)
 
     with col1:
         st.metric("Average Age", f"{filtered_df['Age'].mean():.1f}")
-        st.metric("Male %", f"{(filtered_df['Gender'].eq('Male').mean() * 100):.1f}%")
+        if "Gender" in filtered_df.columns:
+            male_ratio = filtered_df["Gender"].eq("Male").mean() * 100
+            st.metric("Male %", f"{male_ratio:.1f}%")
 
     with col2:
-        st.metric("Unique Sports", f"{filtered_df['Sport'].nunique()}")
+        if "Sport" in filtered_df.columns:
+            st.metric("Unique Sports", f"{filtered_df['Sport'].nunique()}")
         st.metric("Total Records", f"{len(filtered_df)}")
-
 
     # --- Row 1: Bar & Box ---
     col1, col2 = st.columns(2)
