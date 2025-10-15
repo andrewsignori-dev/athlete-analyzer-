@@ -560,7 +560,7 @@ elif page == "Performance Prediction Model":
                 fig2.tight_layout()
                 st.pyplot(fig2)
 
-              with col2:
+            with col2:
                 st.metric(label="Change (%)", value=f"{perf_change:.2f}%")
             
         # --- Dataset Preview & Filters + Plots ---
