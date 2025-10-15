@@ -527,6 +527,7 @@ elif page == "Performance Prediction Model":
         ax.set_title("Performance Evolution")
         ax.set_xlabel("Date")
         ax.set_ylabel("Performance")
+        ax.tick_params(axis='x', rotation=45)
         ax.grid(True, linestyle="--", alpha=0.6)
         fig.tight_layout()
         st.pyplot(fig)
@@ -563,6 +564,7 @@ elif page == "Performance Prediction Model":
                 ax2.set_xlabel("Date")
                 ax2.set_ylabel("Performance")
                 ax2.grid(True, linestyle="--", alpha=0.5)
+                ax2.tick_params(axis='x', rotation=45)
                 fig2.tight_layout()
                 st.pyplot(fig2)
 
