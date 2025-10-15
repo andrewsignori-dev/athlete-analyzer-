@@ -438,7 +438,7 @@ elif page == "Injury Risk Model":
             index="AgeGroup", columns="Sport", values="Injury", aggfunc="mean"
         )
         fig_heat, ax_heat = plt.subplots(figsize=(4,2.5))
-        sns.heatmap(heatmap_data, annot=True, fmt=".2f", cmap="Reds", linewidths=0.5, ax=ax_heat)
+        sns.heatmap(heatmap_data, annot=False, fmt=".2f", cmap="Reds", linewidths=0.5, ax=ax_heat)
         ax_heat.set_ylabel("Age Group")
         ax_heat.set_xlabel("Sport")
         fig_heat.tight_layout()
