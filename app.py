@@ -372,107 +372,90 @@ elif page == "Injury Risk Model":
 
     st.markdown("---")
     
-    # --- Dataset Preview & Filters ---
-    with st.expander("🧮 Show simulated dataset"):
+# --- Dataset Preview & Filters ---
+with st.expander("🧮 Show simulated dataset"):
 
-        st.markdown("### Filter Dataset")
-        gender_options_injury = ["All"] + df_injury["Gender"].unique().tolist()
-        selected_gender_injury = st.selectbox("Gender", gender_options_injury, key="gender_injury")
+    st.markdown("### Filter Dataset")
+    gender_options_injury = ["All"] + df_injury["Gender"].unique().tolist()
+    selected_gender_injury = st.selectbox("Gender", gender_options_injury, key="gender_injury")
 
-        sport_options_injury = ["All"] + df_injury["Sport"].unique().tolist()
-        selected_sport_injury = st.selectbox("Sport", sport_options_injury, key="sport_injury")
+    sport_options_injury = ["All"] + df_injury["Sport"].unique().tolist()
+    selected_sport_injury = st.selectbox("Sport", sport_options_injury, key="sport_injury")
 
-        # Apply filters
-        filtered_injury_df = df_injury.copy()
-        if selected_gender_injury != "All":
-            filtered_injury_df = filtered_injury_df[filtered_injury_df["Gender"] == selected_gender_injury]
-        if selected_sport_injury != "All":
-            filtered_injury_df = filtered_injury_df[filtered_injury_df["Sport"] == selected_sport_injury]
+    # Apply filters
+    filtered_injury_df = df_injury.copy()
+    if selected_gender_injury != "All":
+        filtered_injury_df = filtered_injury_df[filtered_injury_df["Gender"] == selected_gender_injury]
+    if selected_sport_injury != "All":
+        filtered_injury_df = filtered_injury_df[filtered_injury_df["Sport"] == selected_sport_injury]
 
-        # Show filtered table
-        st.dataframe(filtered_injury_df)
+    # Show filtered table
+    st.dataframe(filtered_injury_df)
 
-# ---------------------------
-# Injury Risk Model Page
-# ---------------------------
-elif page == "Additional model":
-    st.title("🏃 Injury Risk Model")
-    st.markdown("Estimate the workload threshold (Kg) associated with a target injury probability")
-    st.markdown("---")
-
-    # Seaborn theme and figure sizing
-    sns.set_theme(style="whitegrid")
-    fig_width = 4.5
-    fig_height = 3
-    font_size = 6
-
-    df_injury = pd.read_excel("synthetic_athlete_injury.xlsx")
-
-    # Fit logistic model
-    X = sm.add_constant(df_injury["Workload"])
-    y = df_injury["Injury"]
-    model = sm.Logit(y, X).fit(disp=False)
-    beta0_hat, beta1_hat = model.params
-
-    # Sidebar-like slider for target probability
-    prob_target_percent = st.slider(
-        "🎯 Target injury probability (%)",
-        min_value=0,
-        max_value=100,
-        value=20,
-        step=1,
-        help="Select the target injury probability to compute the workload threshold (Kg)."
+    # ---------------------------
+    # Plot: Injury Rate by Age Group
+    # ---------------------------
+    st.markdown("### 📊 Injury Rate Across Age Groups")
+    filtered_injury_df["AgeGroup"] = pd.cut(
+        filtered_injury_df["Age"], 
+        bins=[15, 20, 25, 30, 35, 40, 45], 
+        labels=["16-20","21-25","26-30","31-35","36-40"]
     )
+    age_rate = filtered_injury_df.groupby("AgeGroup")["Injury"].mean().reset_index()
+    
+    fig_age, ax_age = plt.subplots(figsize=(4,2.5))
+    sns.barplot(x="AgeGroup", y="Injury", data=age_rate, color="#d62728", ax=ax_age)
+    ax_age.set_ylabel("Injury Rate")
+    ax_age.set_xlabel("Age Group")
+    ax_age.tick_params(axis='x', rotation=45)
+    fig_age.tight_layout()
+    st.pyplot(fig_age)
 
-    # Compute threshold and bootstrap CI
-    X_target = prob_target_percent / 100
-    w_star = (logit(X_target) - beta0_hat) / beta1_hat
+    # ---------------------------
+    # Plot: Injury Rate by Sport
+    # ---------------------------
+    st.markdown("### 🏅 Injury Rate by Sport")
+    sport_rate = filtered_injury_df.groupby("Sport")["Injury"].mean().reset_index()
+    
+    fig_sport, ax_sport = plt.subplots(figsize=(4,2.5))
+    sns.barplot(x="Sport", y="Injury", data=sport_rate, palette="Set2", ax=ax_sport)
+    ax_sport.set_ylabel("Injury Rate")
+    ax_sport.set_xlabel("Sport")
+    ax_sport.tick_params(axis='x', rotation=45)
+    fig_sport.tight_layout()
+    st.pyplot(fig_sport)
 
-    B = 200
-    w_star_boot = []
-    for _ in range(B):
-        sample = df_injury.sample(n=len(df_injury), replace=True)
-        Xb = sm.add_constant(sample["Workload"])
-        yb = sample["Injury"]
-        try:
-            mb = sm.Logit(yb, Xb).fit(disp=False)
-            b0, b1 = mb.params
-            w_b = (logit(X_target) - b0) / b1
-            w_star_boot.append(w_b)
-        except:
-            continue
+    # ---------------------------
+    # Plot: Workload by Injury
+    # ---------------------------
+    st.markdown("### ⚡ Workload Distribution by Injury Status")
+    filtered_injury_df["Injury_str"] = filtered_injury_df["Injury"].map({0: "No", 1: "Yes"})
+    
+    fig_workload, ax_workload = plt.subplots(figsize=(4,2.5))
+    sns.boxplot(
+        x="Injury_str",
+        y="Workload",
+        data=filtered_injury_df,
+        palette={"No": "#1f77b4", "Yes": "#d62728"},
+        ax=ax_workload
+    )
+    ax_workload.set_xlabel("Injury")
+    ax_workload.set_ylabel("Workload")
+    fig_workload.tight_layout()
+    st.pyplot(fig_workload)
 
-    ci_lower, ci_upper = np.percentile(w_star_boot, [2.5, 97.5])
+    # ---------------------------
+    # Heatmap: Age × Sport
+    # ---------------------------
+    st.markdown("### 🔥 Injury Heatmap: Age × Sport")
+    heatmap_data = filtered_injury_df.pivot_table(index="AgeGroup", columns="Sport", values="Injury", aggfunc="mean")
+    
+    fig_heat, ax_heat = plt.subplots(figsize=(4,2.5))
+    sns.heatmap(heatmap_data, annot=True, fmt=".2f", cmap="Reds", linewidths=0.5, ax=ax_heat)
+    ax_heat.set_ylabel("Age Group")
+    ax_heat.set_xlabel("Sport")
+    fig_heat.tight_layout()
+    st.pyplot(fig_heat)
 
-    # --- Row 1: Plot and Results ---
-    col1, col2 = st.columns([2, 1])
 
-    with col1:
-        work_range = np.linspace(0, 30, 200)
-        p_pred = 1 / (1 + np.exp(-(beta0_hat + beta1_hat * work_range)))
 
-        fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-        ax.scatter(df_injury["Workload"], df_injury["Injury"],
-                   alpha=0.4, s=40, color="#1f77b4", label="Observed Data", edgecolor="w")
-        ax.plot(work_range, p_pred, color="#d62728", linewidth=2, label="Predicted Probability")
-        ax.fill_between(work_range, 0, p_pred, color="#d62728", alpha=0.1)
-        ax.axvline(w_star, color="#2ca02c", linestyle="--", linewidth=2,
-                   label=f"Optimal Workload (w*) = {w_star:.2f}")
-        ax.scatter(w_star, np.interp(w_star, work_range, p_pred), color="#2ca02c", s=80, zorder=5)
-        ax.set_xlabel("Workload", fontsize=font_size+2, weight='bold')
-        ax.set_ylabel("Injury Probability", fontsize=font_size+2, weight='bold')
-        ax.tick_params(axis='x', labelsize=font_size)
-        ax.tick_params(axis='y', labelsize=font_size)
-        ax.grid(alpha=0.3, linestyle='--')
-        ax.legend(fontsize=font_size, frameon=True, facecolor='white', edgecolor='black')
-        fig.tight_layout()
-        st.pyplot(fig)
-
-    with col2:
-        st.subheader("📋 Results")
-        st.markdown(f"**Workload threshold (Kg)**: {w_star:.2f}")
-        st.markdown(f"**95% CI**: [{ci_lower:.2f}, {ci_upper:.2f}]")
-        st.markdown("---")
-        st.markdown(f"For an injury probability of **{prob_target_percent}%**, the estimated workload threshold is **{w_star:.2f}**.")
-
-    st.markdown("---")
