@@ -469,3 +469,29 @@ elif page == "Performance Prediction Model":
     k1 = 1              # fitness coefficient
     k2 = 1.5            # fatigue coefficient
 
+    # Load dataset
+    df_performance = pd.read_excel("All_data.xlsx")
+
+     # --- Data cleaning ---
+    df_performance.columns = df_performance.columns.str.strip()
+    df_performance["Date"] = pd.to_datetime(df_performance["Date"])
+    df_performance["Load (kg)"] = pd.to_numeric(df_performance["Load (kg)"], errors="coerce").fillna(0)
+    df_performance["Set"] = pd.to_numeric(df_performance["Set"], errors="coerce").fillna(0)
+    df_performance["Rep"] = pd.to_numeric(df_performance["Rep"], errors="coerce").fillna(0)
+
+    # --- Body part classification ---
+    lower_list = ['Squat', 'Front Squat', 'Olympic Lift', 'Deadlift', 'RDL', 'Hip Thrust', 'Run/Walk/Sprint']
+    df_performance["BodyPart"] = np.where(df_performance["Family"].isin(lower_list), "Lower", "Upper")
+
+    # --- Sidebar filters ---
+    area = st.selectbox("Select Area", sorted(df_performance["Area"].unique()))
+    name = st.selectbox("Select Name", sorted(df_performance.loc[df_performance["Area"] == area, "Name"].unique()))
+    body_part = st.selectbox("Select Body Part", ["Lower", "Upper"])
+
+    # --- Filter dataset ---
+    filtered_df = df_performance[
+        (df_performance["Area"] == area) &
+        (df_performance["Name"] == name) &
+        (df_performance["BodyPart"] == body_part)
+    ].sort_values("Date")
+
