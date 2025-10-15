@@ -425,13 +425,25 @@ elif page == "Injury Risk Model":
     # Workload by Injury
     st.markdown("### ⚡ Workload Distribution by Injury Status")
     filtered_injury_df["Injury_str"] = filtered_injury_df["Injury"].map({0: "No", 1: "Yes"})
+    # Map Injury to string
+    filtered_injury_df["Injury_str"] = filtered_injury_df["Injury"].map({0: "No", 1: "Yes"})
+
+    # Only keep colors for values present
+    present_values = filtered_injury_df["Injury_str"].unique().tolist()
+    palette_dict = {}
+    if "No" in present_values:
+        palette_dict["No"] = "#1f77b4"
+    if "Yes" in present_values:
+        palette_dict["Yes"] = "#d62728"
+
+    # Plot
     fig_workload, ax_workload = plt.subplots(figsize=(fig_width_small, fig_height_small))
     sns.boxplot(
-        x="Injury_str",
-        y="Workload",
-        data=filtered_injury_df,
-        palette={"No": "#1f77b4", "Yes": "#d62728"},
-        ax=ax_workload
+    x="Injury_str",
+    y="Workload",
+    data=filtered_injury_df,
+    palette=palette_dict,
+    ax=ax_workload
     )
     ax_workload.set_xlabel("Injury", fontsize=font_size)
     ax_workload.set_ylabel("Workload", fontsize=font_size)
@@ -439,6 +451,7 @@ elif page == "Injury Risk Model":
     ax_workload.tick_params(axis='y', labelsize=font_size)
     fig_workload.tight_layout()
     st.pyplot(fig_workload)
+
 
     # Heatmap Age × Sport
     st.markdown("### 🔥 Injury Heatmap: Age × Sport")
