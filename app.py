@@ -256,21 +256,48 @@ elif page == "Injury Risk Model":
     st.markdown("Estimate the workload threshold (Kg) associated with a target injury probability")
     st.markdown("---")
 
+    # Load dataset
+    df_injury = pd.read_excel("synthetic_athlete_injury.xlsx")
+
+    # --- In-page Filters ---
+    st.subheader("🎯 Filter Dataset Before Prediction")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        gender_options = ["All"] + sorted(df_injury["Gender"].dropna().unique().tolist())
+        selected_gender = st.selectbox("Gender", gender_options)
+
+    with col2:
+        sport_options = ["All"] + sorted(df_injury["Sport"].dropna().unique().tolist())
+        selected_sport = st.selectbox("Sport", sport_options)
+
+    # Apply filters
+    filtered_df = df_injury.copy()
+    if selected_gender != "All":
+        filtered_df = filtered_df[filtered_df["Gender"] == selected_gender]
+    if selected_sport != "All":
+        filtered_df = filtered_df[filtered_df["Sport"] == selected_sport]
+
+    # If no data left after filtering, stop
+    if filtered_df.empty:
+        st.warning("⚠️ No data available for the selected filters. Please adjust your selection.")
+        st.stop()
+
+    st.markdown("---")
+
     # Seaborn theme and figure sizing
     sns.set_theme(style="whitegrid")
     fig_width = 4.5
     fig_height = 3
     font_size = 6
 
-    df_injury = pd.read_excel("synthetic_athlete_injury.xlsx")
-
-    # Fit logistic model
-    X = sm.add_constant(df_injury["Workload"])
-    y = df_injury["Injury"]
+    # --- Fit logistic regression model ---
+    X = sm.add_constant(filtered_df["Workload"])
+    y = filtered_df["Injury"]
     model = sm.Logit(y, X).fit(disp=False)
     beta0_hat, beta1_hat = model.params
 
-    # Sidebar-like slider for target probability
+    # --- Injury probability slider ---
     prob_target_percent = st.slider(
         "🎯 Target injury probability (%)",
         min_value=0,
@@ -280,14 +307,14 @@ elif page == "Injury Risk Model":
         help="Select the target injury probability to compute the workload threshold (Kg)."
     )
 
-    # Compute threshold and bootstrap CI
+    # --- Compute threshold and bootstrap CI ---
     X_target = prob_target_percent / 100
     w_star = (logit(X_target) - beta0_hat) / beta1_hat
 
     B = 200
     w_star_boot = []
     for _ in range(B):
-        sample = df_injury.sample(n=len(df_injury), replace=True)
+        sample = filtered_df.sample(n=len(filtered_df), replace=True)
         Xb = sm.add_constant(sample["Workload"])
         yb = sample["Injury"]
         try:
@@ -303,18 +330,18 @@ elif page == "Injury Risk Model":
     # --- Row 1: Plot and Results ---
     col1, col2 = st.columns([2, 1])
     with col1:
-        work_range = np.linspace(0, 30, 200)
+        work_range = np.linspace(filtered_df["Workload"].min(), filtered_df["Workload"].max(), 200)
         p_pred = 1 / (1 + np.exp(-(beta0_hat + beta1_hat * work_range)))
 
         fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-        ax.scatter(df_injury["Workload"], df_injury["Injury"],
+        ax.scatter(filtered_df["Workload"], filtered_df["Injury"],
                    alpha=0.4, s=40, color="#1f77b4", label="Observed Data", edgecolor="w")
         ax.plot(work_range, p_pred, color="#d62728", linewidth=2, label="Predicted Probability")
         ax.fill_between(work_range, 0, p_pred, color="#d62728", alpha=0.1)
         ax.axvline(w_star, color="#2ca02c", linestyle="--", linewidth=2,
                    label=f"Optimal Workload (w*) = {w_star:.2f}")
         ax.scatter(w_star, np.interp(w_star, work_range, p_pred), color="#2ca02c", s=80, zorder=5)
-        ax.set_xlabel("Workload", fontsize=font_size+2, weight='bold')
+        ax.set_xlabel("Workload (Kg)", fontsize=font_size+2, weight='bold')
         ax.set_ylabel("Injury Probability", fontsize=font_size+2, weight='bold')
         ax.tick_params(axis='x', labelsize=font_size)
         ax.tick_params(axis='y', labelsize=font_size)
@@ -328,7 +355,11 @@ elif page == "Injury Risk Model":
         st.markdown(f"**Workload threshold (Kg)**: {w_star:.2f}")
         st.markdown(f"**95% CI**: [{ci_lower:.2f}, {ci_upper:.2f}]")
         st.markdown("---")
-        st.markdown(f"For an injury probability of **{prob_target_percent}%**, the estimated workload threshold is **{w_star:.2f} Kg**.")
+        st.markdown(
+            f"For an injury probability of **{prob_target_percent}%**, "
+            f"the estimated workload threshold for **{selected_gender if selected_gender != 'All' else 'all genders'}** "
+            f"and **{selected_sport if selected_sport != 'All' else 'all sports'}** athletes is **{w_star:.2f} Kg**."
+        )
 
     st.markdown("---")
 
