@@ -567,7 +567,6 @@ elif page == "Performance Prediction Model":
                 st.pyplot(fig2)
 
             with col2:
-                st.metric(label="Predicted Performance", value=f"{performance_new:.2f}")
                 st.metric(label="Change (%)", value=f"{perf_change:.2f}%")
 
 
