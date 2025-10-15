@@ -422,22 +422,23 @@ with st.expander("🧮 Show simulated dataset and exploratory analysis"):
     fig_sport.tight_layout()
     st.pyplot(fig_sport)
 
-    # Workload by Injury
-    st.markdown("### ⚡ Workload Distribution by Injury Status")
+    # Workload by Injury and Gender
+    st.markdown("### ⚡ Workload Distribution by Injury Status and Gender")
     filtered_injury_df["Injury_str"] = filtered_injury_df["Injury"].map({0: "No", 1: "Yes"})
+
     fig_workload, ax_workload = plt.subplots(figsize=(fig_width_small, fig_height_small))
-    sns.boxplot(
-        x="Injury_str",
-        y="Workload",
-        hue="Gender",
-        data=filtered_injury_df,
-        palette={"No": "#1f77b4", "Yes": "#d62728"},
-        ax=ax_workload
-    )
+    sns.boxplot(x="Injury_str",
+                y="Workload",
+                hue="Gender",
+                data=filtered_injury_df,
+                palette={"Male": "#1f77b4", "Female": "#ff7f0e"},
+                ax=ax_workload)
+
     ax_workload.set_xlabel("Injury", fontsize=font_size)
     ax_workload.set_ylabel("Workload", fontsize=font_size)
     ax_workload.tick_params(axis='x', labelsize=font_size)
     ax_workload.tick_params(axis='y', labelsize=font_size)
+    ax_workload.legend(title="Gender", fontsize=font_size-1, title_fontsize=font_size-1)
     fig_workload.tight_layout()
     st.pyplot(fig_workload)
 
