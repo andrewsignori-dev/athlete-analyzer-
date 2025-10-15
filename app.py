@@ -372,16 +372,16 @@ elif page == "Injury Risk Model":
 
     st.markdown("---")
 
-# --- Row 2: Dataset Preview & Interactive Exploratory Plots ---
-with st.expander("🧮 Show simulated dataset and exploratory analysis"):
+   # --- Row 2: Dataset Preview & Interactive Exploratory Plots ---
+   with st.expander("🧮 Show simulated dataset and exploratory analysis"):
 
     # --- Filters ---
-    st.markdown("### Filter Dataset")
-    gender_options_injury = ["All"] + df_injury["Gender"].unique().tolist()
-    selected_gender_injury = st.selectbox("Gender", gender_options_injury, key="gender_injury")
+        st.markdown("### Filter Dataset")
+        gender_options_injury = ["All"] + df_injury["Gender"].unique().tolist()
+        selected_gender_injury = st.selectbox("Gender", gender_options_injury, key="gender_injury")
 
-    sport_options_injury = ["All"] + df_injury["Sport"].unique().tolist()
-    selected_sport_injury = st.selectbox("Sport", sport_options_injury, key="sport_injury")
+        sport_options_injury = ["All"] + df_injury["Sport"].unique().tolist()
+        selected_sport_injury = st.selectbox("Sport", sport_options_injury, key="sport_injury")
 
     # Apply filters
     filtered_injury_df = df_injury.copy()
