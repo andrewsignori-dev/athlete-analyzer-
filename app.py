@@ -305,8 +305,8 @@ elif page == "Injury Risk Model":
     df_injury = pd.read_excel("synthetic_athlete_injury.xlsx")
 
     # Fit logistic model
-    X = sm.add_constant(df_injury["workload"])
-    y = df_injury["injury"]
+    X = sm.add_constant(df_injury["Workload"])
+    y = df_injury["Injury"]
     model = sm.Logit(y, X).fit(disp=False)
     beta0_hat, beta1_hat = model.params
 
@@ -328,8 +328,8 @@ elif page == "Injury Risk Model":
     w_star_boot = []
     for _ in range(B):
         sample = df_injury.sample(n=len(df_injury), replace=True)
-        Xb = sm.add_constant(sample["workload"])
-        yb = sample["injury"]
+        Xb = sm.add_constant(sample["Workload"])
+        yb = sample["Injury"]
         try:
             mb = sm.Logit(yb, Xb).fit(disp=False)
             b0, b1 = mb.params
@@ -348,7 +348,7 @@ elif page == "Injury Risk Model":
         p_pred = 1 / (1 + np.exp(-(beta0_hat + beta1_hat * work_range)))
 
         fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-        ax.scatter(df_injury["workload"], df_injury["injury"],alpha=0.4, s=40, color="#1f77b4", label="Observed Data", edgecolor="w")
+        ax.scatter(df_injury["Workload"], df_injury["Injury"],alpha=0.4, s=40, color="#1f77b4", label="Observed Data", edgecolor="w")
         ax.plot(work_range, p_pred, color="#d62728", linewidth=2, label="Predicted Probability")
         ax.fill_between(work_range, 0, p_pred, color="#d62728", alpha=0.1)
         ax.axvline(w_star, color="#2ca02c", linestyle="--", linewidth=2,label=f"Optimal Workload (w*) = {w_star:.2f}")
