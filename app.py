@@ -53,7 +53,7 @@ if page == "Athlete Ability":
     st.markdown("---")
 
     # --- Filters ---
-    st.subheader("🎯 Filter Athletes")
+    st.subheader("🔎 Filter Data")
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -80,8 +80,7 @@ if page == "Athlete Ability":
     ]
 
     st.markdown("---")
-      # --- Display Filtered Results ---
-    st.subheader("🔎 Filter Data")
+    # --- Display Filtered Results ---
     st.write(f"**Total Athletes:** {len(filtered_df)}")
     st.dataframe(filtered_df, use_container_width=True)
 
