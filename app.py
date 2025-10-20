@@ -27,7 +27,7 @@ df_scaled[abilities] = scaler.fit_transform(df[abilities])
 # Sidebar Filters
 # ---------------------------
 st.sidebar.title("⚡ Athlete Dashboard Filters")
-page = st.sidebar.radio("Navigate to", ["Athlete Ability", "Injury Risk Model", "Performance Prediction Model"])
+page = st.sidebar.radio("Navigate to", ["Athlete Ability", "Injury Risk Model", "Performance Prediction Model","Injury"])
 
 # ---------------------------
 # Seaborn theme
@@ -585,6 +585,61 @@ elif page == "Performance Prediction Model":
             st.dataframe(filtered_df, use_container_width=True)
 
 
+
+elif page == "Injury":
+    st.title("🏃 Workload Risk Analysis")
+    st.markdown("Explore workload distributions and identify potential overload zones.")
+    st.markdown("---")
+
+    df_injury = pd.read_excel("All_data.xlsx")
+    # Replace NaNs in set, rep, and load with 1
+    df_injury["set"] = df_injury["Set"].fillna(1)
+    df_injury["rep"] = df_injury["Rep"].fillna(1)
+    df_injury["load (kg)"] = df_injury["Load (kg)"].fillna(1)
+
+    # Compute workload (set × rep × load)
+    df_injury["Workload"] = df_injury["Set"] * df_injury["Rep"] * df_injury["Load (kg)"]
+    df_injury["Workload"] = pd.to_numeric(df_injury["Workload"].astype(str).str.replace(",", "."), errors="coerce")
+
+    # Filters
+    gender_options = ["All"] + sorted(df_injury["Gender"].dropna().unique().tolist())
+    sport_options = ["All"] + sorted(df_injury["Sport"].dropna().unique().tolist())
+
+    selected_gender = st.selectbox("Gender", gender_options)
+    selected_sport = st.selectbox("Sport", sport_options)
+
+    filtered_df = df_injury.copy()
+    if selected_gender != "All":
+        filtered_df = filtered_df[filtered_df["Gender"] == selected_gender]
+    if selected_sport != "All":
+        filtered_df = filtered_df[filtered_df["Sport"] == selected_sport]
+
+    # Compute workload stats
+    mu = filtered_df["Workload"].mean()
+    sigma = filtered_df["Workload"].std()
+
+    thresholds = [mu - sigma, mu, mu + sigma]
+    labels = ["Low", "Moderate", "High", "Very High"]
+    filtered_df["RiskZone"] = pd.cut(filtered_df["Workload"], bins=[-np.inf] + thresholds + [np.inf], labels=labels)
+
+    st.subheader(f"📊 Workload Distribution – {selected_sport if selected_sport != 'All' else 'All Sports'}")
+
+    fig, ax = plt.subplots(figsize=(5, 3))
+    sns.histplot(filtered_df["Workload"], kde=True, bins=10, color="#1f77b4", ax=ax)
+    for thr in thresholds:
+        ax.axvline(thr, color="red", linestyle="--", alpha=0.7)
+    ax.set_title("Workload Distribution and Risk Zones")
+    ax.set_xlabel("Workload")
+    ax.set_ylabel("Frequency")
+    st.pyplot(fig)
+
+    st.markdown(f"**Mean workload:** {mu:.2f}")
+    st.markdown(f"**Standard deviation:** {sigma:.2f}")
+    st.markdown("**Risk zone thresholds:**")
+    st.markdown(f"- Low: < {mu - sigma:.2f}")
+    st.markdown(f"- Moderate: {mu - sigma:.2f} – {mu:.2f}")
+    st.markdown(f"- High: {mu:.2f} – {mu + sigma:.2f}")
+    st.markdown(f"- Very High: > {mu + sigma:.2f}")
 
 
 
