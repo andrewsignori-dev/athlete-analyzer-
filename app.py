@@ -48,7 +48,7 @@ sns.set_theme(style="whitegrid")
 # Athlete Ability Page
 # ---------------------------
 if page == "Athlete Ability":
-    st.title("🏋️ Athlete Abilities Dashboard")
+    st.title("🏋️ Athlete Abilities")
     st.markdown("Explore standardized abilities of athletes and evaluate a new athlete.")
     st.markdown("---")
 
