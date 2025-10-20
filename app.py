@@ -40,7 +40,7 @@ sns.set_theme(style="whitegrid")
 fig_width = 4
 fig_height = 3
 font_size = 7
-bar_colors = ["#2ca02c" if v >= 0 else "#d62728" for v in filtered_df[abilities].mean()]
+bar_colors = ["#2ca02c" if v >= 0 else "#d62728" for v in df_scaled[abilities].mean()]
 
 sns.set_theme(style="whitegrid")
 
