@@ -389,46 +389,6 @@ elif page == "Injury Risk Model":
     - 🟥 **Very High:** Potential overload or injury risk.  
     """)
 
-    # --- Prepare data for plotting ---
-    zone_cols = ["Set_Zone", "Rep_Zone", "Load (kg)_Zone"]
-    plot_data = pd.DataFrame()
-
-    for var, col in zip(["Set", "Rep", "Load (kg)"], zone_cols):
-        counts = filtered_df[col].value_counts().reindex(["Low","Moderate","High","Very High"], fill_value=0)
-        df_counts = pd.DataFrame({
-        "Parameter": var,
-        "Risk Zone": counts.index,
-        "Count": counts.values
-        })
-        plot_data = pd.concat([plot_data, df_counts], axis=0)
-
-    plot_data.reset_index(drop=True, inplace=True)
-
-    # --- Plot ---
-    st.subheader("📊 Risk Zone Distribution by Training Parameter")
-    sns.set_style("whitegrid")
-    fig, ax = plt.subplots(figsize=(6, 4))
-
-    # Use a palette matching your table colors
-    palette = {"Low": "#d4edda", "Moderate": "#fff3cd", "High": "#ffe5b4", "Very High": "#f8d7da"}
-
-    sns.barplot(
-    data=plot_data,
-    x="Parameter",
-    y="Count",
-    hue="Risk Zone",
-    hue_order=["Low","Moderate","High","Very High"],
-    palette=palette,
-    edgecolor="black",
-    ax=ax
-    )
-
-    ax.set_ylabel("Number of Observations")
-    ax.set_xlabel("Training Parameter")
-    ax.set_title("Distribution of Risk Zones per Parameter")
-    ax.legend(title="Risk Zone", bbox_to_anchor=(1.05, 1), loc="upper left")
-    st.pyplot(fig)
-
 # -----------------------------------------------------------
 # --- PERFORMANCE PREDICTION MODEL PAGE ---
 # -----------------------------------------------------------
