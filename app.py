@@ -607,11 +607,11 @@ elif page == "Injury":
     df_injury["Workload"] = pd.to_numeric(df_injury["Workload"].astype(str).str.replace(",", "."), errors="coerce")
 
     # Filters
-    gender_options = ["All"] + sorted(df_injury["Gender"].dropna().unique().tolist())
-    sport_options = ["All"] + sorted(df_injury["Sport"].dropna().unique().tolist())
+    name_options = ["All"] + sorted(df_injury["Name"].dropna().unique().tolist())
+    area_options = ["All"] + sorted(df_injury["Area"].dropna().unique().tolist())
 
-    selected_gender = st.selectbox("Gender", gender_options)
-    selected_sport = st.selectbox("Sport", sport_options)
+    selected_name = st.selectbox("Name", name_options)
+    selected_area = st.selectbox("Area", area_options)
 
     filtered_df = df_injury.copy()
     if selected_gender != "All":
