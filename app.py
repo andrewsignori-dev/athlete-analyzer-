@@ -587,8 +587,8 @@ elif page == "Performance Prediction Model":
 
 
 elif page == "Injury":
-    st.title("🏃 Workload Risk Analysis")
-    st.markdown("Explore workload distributions and identify potential overload zones.")
+    st.title("🏃 Individual Training Parameter Risk Analysis")
+    st.markdown("Explore risk zones for Set, Rep, and Load (kg) individually.")
     st.markdown("---")
 
     # --- Load dataset ---
@@ -597,16 +597,15 @@ elif page == "Injury":
     # --- Data cleaning ---
     df_injury.columns = df_injury.columns.str.strip()
     df_injury["Date"] = pd.to_datetime(df_injury["Date"], errors="coerce")
-    df_injury["Load (kg)"] = pd.to_numeric(df_injury["Load (kg)"], errors="coerce").fillna(0)
-    df_injury["Set"] = pd.to_numeric(df_injury["Set"], errors="coerce").fillna(0)
-    df_injury["Rep"] = pd.to_numeric(df_injury["Rep"], errors="coerce").fillna(0)
 
+    # Convert numeric columns, fill NaN with 1 to ensure safe computation
+    for col in ["Set", "Rep", "Load (kg)"]:
+        if col in df_injury.columns:
+            df_injury[col] = pd.to_numeric(df_injury[col].astype(str).str.replace(",", "."), errors="coerce").fillna(1)
+        else:
+            df_injury[col] = 1
 
-    # --- Compute Workload ---
-    df_injury["Workload"] = df_injury["Set"] * df_injury["Rep"] * df_injury["Load (kg)"]
-    df_injury["Workload"] = pd.to_numeric(df_injury["Workload"].astype(str).str.replace(",", "."), errors="coerce")
-
-    # Filters
+    # --- Filters ---
     name_options = ["All"] + sorted(df_injury["Name"].dropna().unique().tolist())
     area_options = ["All"] + sorted(df_injury["Area"].dropna().unique().tolist())
 
@@ -619,32 +618,49 @@ elif page == "Injury":
     if selected_area != "All":
         filtered_df = filtered_df[filtered_df["Area"] == selected_area]
 
-    # Compute workload stats
-    mu = filtered_df["Workload"].mean()
-    sigma = filtered_df["Workload"].std()
+    st.subheader(f"📊 Training Parameter Risk Zones – {selected_area if selected_area != 'All' else 'All Areas'}")
 
-    thresholds = [mu - sigma, mu, mu + sigma]
-    labels = ["Low", "Moderate", "High", "Very High"]
-    filtered_df["RiskZone"] = pd.cut(filtered_df["Workload"], bins=[-np.inf] + thresholds + [np.inf], labels=labels)
+    # --- Function to compute zones ---
+    def compute_zones(series):
+        mu = series.mean()
+        sigma = series.std()
+        # Ensure no negative thresholds
+        low = max(mu - sigma, 0)
+        moderate = mu
+        high = mu + sigma
+        thresholds = [low, moderate, high]
+        labels = ["Low", "Moderate", "High", "Very High"]
+        zone_series = pd.cut(series, bins=[-np.inf] + thresholds + [np.inf], labels=labels)
+        return zone_series, thresholds
 
-    st.subheader(f"📊 Workload Distribution – {selected_area if selected_area != 'All' else 'All Areas'}")
+    # Compute zones for Set, Rep, Load
+    filtered_df["Set_Zone"], set_thr = compute_zones(filtered_df["Set"])
+    filtered_df["Rep_Zone"], rep_thr = compute_zones(filtered_df["Rep"])
+    filtered_df["Load_Zone"], load_thr = compute_zones(filtered_df["Load (kg)"])
 
-    fig, ax = plt.subplots(figsize=(5, 3))
-    sns.histplot(filtered_df["Workload"], kde=True, bins=10, color="#1f77b4", ax=ax)
-    for thr in thresholds:
-        ax.axvline(thr, color="red", linestyle="--", alpha=0.7)
-    ax.set_title("Workload Distribution and Risk Zones")
-    ax.set_xlabel("Workload")
-    ax.set_ylabel("Frequency")
-    st.pyplot(fig)
+    # --- Plot histograms ---
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    sns.set_theme(style="whitegrid")
 
-    st.markdown(f"**Mean workload:** {mu:.2f}")
-    st.markdown(f"**Standard deviation:** {sigma:.2f}")
-    st.markdown("**Risk zone thresholds:**")
-    st.markdown(f"- Low: < {mu - sigma:.2f}")
-    st.markdown(f"- Moderate: {mu - sigma:.2f} – {mu:.2f}")
-    st.markdown(f"- High: {mu:.2f} – {mu + sigma:.2f}")
-    st.markdown(f"- Very High: > {mu + sigma:.2f}")
+    for var, zone_col, thr in [("Set", "Set_Zone", set_thr),
+                               ("Rep", "Rep_Zone", rep_thr),
+                               ("Load (kg)", "Load_Zone", load_thr)]:
+        fig, ax = plt.subplots(figsize=(5,3))
+        sns.histplot(filtered_df[var], kde=True, bins=10, color="#1f77b4", ax=ax)
+        for t in thr:
+            ax.axvline(t, color="red", linestyle="--", alpha=0.7)
+        ax.set_title(f"{var} Distribution and Risk Zones")
+        ax.set_xlabel(var)
+        ax.set_ylabel("Frequency")
+        st.pyplot(fig)
+
+        st.markdown(f"**{var} thresholds (no negative values):**")
+        st.markdown(f"- Low: < {thr[0]:.2f}")
+        st.markdown(f"- Moderate: {thr[0]:.2f} – {thr[1]:.2f}")
+        st.markdown(f"- High: {thr[1]:.2f} – {thr[2]:.2f}")
+        st.markdown(f"- Very High: > {thr[2]:.2f}")
+
 
 
 
