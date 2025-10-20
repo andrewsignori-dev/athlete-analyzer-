@@ -598,7 +598,7 @@ elif page == "Injury":
     df_injury.columns = df_injury.columns.str.strip()
     df_injury["Date"] = pd.to_datetime(df_injury["Date"], errors="coerce")
 
-    # Convert numeric columns, fill NaN with 1 to ensure safe computation
+    # Convert numeric columns and fill missing values with 1
     for col in ["Set", "Rep", "Load (kg)"]:
         if col in df_injury.columns:
             df_injury[col] = pd.to_numeric(df_injury[col].astype(str).str.replace(",", "."), errors="coerce").fillna(1)
@@ -608,37 +608,42 @@ elif page == "Injury":
     # --- Filters ---
     name_options = ["All"] + sorted(df_injury["Name"].dropna().unique().tolist())
     area_options = ["All"] + sorted(df_injury["Area"].dropna().unique().tolist())
+    family_options = ["All"] + sorted(df_injury["Family"].dropna().unique().tolist())
 
     selected_name = st.selectbox("Name", name_options)
     selected_area = st.selectbox("Area", area_options)
+    selected_family = st.selectbox("Family", family_options)
 
     filtered_df = df_injury.copy()
     if selected_name != "All":
         filtered_df = filtered_df[filtered_df["Name"] == selected_name]
     if selected_area != "All":
         filtered_df = filtered_df[filtered_df["Area"] == selected_area]
+    if selected_family != "All":
+        filtered_df = filtered_df[filtered_df["Family"] == selected_family]
 
     st.subheader(f"📊 Training Parameter Risk Zones – {selected_area if selected_area != 'All' else 'All Areas'}")
 
-    # --- Function to compute zones ---
+    # --- Function to compute risk zones ---
     def compute_zones(series):
         mu = series.mean()
         sigma = series.std()
-        # Ensure no negative thresholds
+        # Ensure thresholds are non-negative
         low = max(mu - sigma, 0)
         moderate = mu
         high = mu + sigma
-        thresholds = [low, moderate, high]
+        # Round thresholds to nearest integer
+        thresholds = [round(low, 0), round(moderate, 0), round(high, 0)]
         labels = ["Low", "Moderate", "High", "Very High"]
         zone_series = pd.cut(series, bins=[-np.inf] + thresholds + [np.inf], labels=labels)
         return zone_series, thresholds
 
-    # Compute zones for Set, Rep, Load
+    # Compute risk zones for each variable
     filtered_df["Set_Zone"], set_thr = compute_zones(filtered_df["Set"])
     filtered_df["Rep_Zone"], rep_thr = compute_zones(filtered_df["Rep"])
     filtered_df["Load_Zone"], load_thr = compute_zones(filtered_df["Load (kg)"])
 
-    # --- Plot histograms ---
+    # --- Plot distributions ---
     import matplotlib.pyplot as plt
     import seaborn as sns
     sns.set_theme(style="whitegrid")
@@ -646,7 +651,7 @@ elif page == "Injury":
     for var, zone_col, thr in [("Set", "Set_Zone", set_thr),
                                ("Rep", "Rep_Zone", rep_thr),
                                ("Load (kg)", "Load_Zone", load_thr)]:
-        fig, ax = plt.subplots(figsize=(5,3))
+        fig, ax = plt.subplots(figsize=(5, 3))
         sns.histplot(filtered_df[var], kde=True, bins=10, color="#1f77b4", ax=ax)
         for t in thr:
             ax.axvline(t, color="red", linestyle="--", alpha=0.7)
@@ -655,11 +660,13 @@ elif page == "Injury":
         ax.set_ylabel("Frequency")
         st.pyplot(fig)
 
-        st.markdown(f"**{var} thresholds (no negative values):**")
-        st.markdown(f"- Low: < {thr[0]:.2f}")
-        st.markdown(f"- Moderate: {thr[0]:.2f} – {thr[1]:.2f}")
-        st.markdown(f"- High: {thr[1]:.2f} – {thr[2]:.2f}")
-        st.markdown(f"- Very High: > {thr[2]:.2f}")
+        st.markdown(f"**{var} thresholds (rounded, no negatives):**")
+        st.markdown(f"- Low: < {int(thr[0])}")
+        st.markdown(f"- Moderate: {int(thr[0])} – {int(thr[1])}")
+        st.markdown(f"- High: {int(thr[1])} – {int(thr[2])}")
+        st.markdown(f"- Very High: > {int(thr[2])}")
+        st.markdown("---")
+
 
 
 
