@@ -642,28 +642,15 @@ elif page == "Injury":
     filtered_df["Rep_Zone"], rep_thr = compute_zones(filtered_df["Rep"])
     filtered_df["Load_Zone"], load_thr = compute_zones(filtered_df["Load (kg)"])
 
-    # --- Plot histograms ---
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    sns.set_theme(style="whitegrid")
-
     for var, zone_col, thr in [("Set", "Set_Zone", set_thr),
                                ("Rep", "Rep_Zone", rep_thr),
                                ("Load (kg)", "Load_Zone", load_thr)]:
-        fig, ax = plt.subplots(figsize=(5,3))
-        sns.histplot(filtered_df[var], kde=True, bins=10, color="#1f77b4", ax=ax)
-        for t in thr:
-            ax.axvline(t, color="red", linestyle="--", alpha=0.7)
-        ax.set_title(f"{var} Distribution and Risk Zones")
-        ax.set_xlabel(var)
-        ax.set_ylabel("Frequency")
-        st.pyplot(fig)
 
         st.markdown(f"**{var} thresholds (no negative values):**")
-        st.markdown(f"- Low: < {thr[0]:.2f}")
-        st.markdown(f"- Moderate: {thr[0]:.2f} – {thr[1]:.2f}")
-        st.markdown(f"- High: {thr[1]:.2f} – {thr[2]:.2f}")
-        st.markdown(f"- Very High: > {thr[2]:.2f}")
+        st.markdown(f"- Low (Easy or recovery load): < {thr[0]:.2f}")
+        st.markdown(f"- Moderate (Typical day) or normal effort): {thr[0]:.2f} – {thr[1]:.2f}")
+        st.markdown(f"- High (Challenging load): {thr[1]:.2f} – {thr[2]:.2f}")
+        st.markdown(f"- Very High (Potential overload or injury risk): > {thr[2]:.2f}")
 
 
 
