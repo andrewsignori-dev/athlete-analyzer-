@@ -209,7 +209,7 @@ if page == "Athlete Ability":
 
         for i, ability in enumerate(abilities):
             ax_box_overlay.scatter(i, new_values[ability], color="#1f77b4", s=50, zorder=10,
-                                   label
+                                   label)
 
 
 # ---------------------------
