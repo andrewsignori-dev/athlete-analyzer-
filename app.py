@@ -461,12 +461,12 @@ elif page == "Performance Prediction Model":
     k1 = 1              # fitness coefficient
     k2 = 1.5            # fatigue coefficient
 
-    # Load dataset
+    # --- Load dataset ---
     df_performance = pd.read_excel("All_data.xlsx")
 
-     # --- Data cleaning ---
+    # --- Data cleaning ---
     df_performance.columns = df_performance.columns.str.strip()
-    df_performance["Date"] = pd.to_datetime(df_performance["Date"])
+    df_performance["Date"] = pd.to_datetime(df_performance["Date"], errors="coerce")
     df_performance["Load (kg)"] = pd.to_numeric(df_performance["Load (kg)"], errors="coerce").fillna(0)
     df_performance["Set"] = pd.to_numeric(df_performance["Set"], errors="coerce").fillna(0)
     df_performance["Rep"] = pd.to_numeric(df_performance["Rep"], errors="coerce").fillna(0)
@@ -476,27 +476,43 @@ elif page == "Performance Prediction Model":
     df_performance["BodyPart"] = np.where(df_performance["Family"].isin(lower_list), "Lower", "Upper")
 
     # --- Sidebar filters ---
+    st.sidebar.markdown("### 🔍 Filter Options")
+
     area = st.selectbox("Select Area", sorted(df_performance["Area"].unique()))
     name = st.selectbox("Select Name", sorted(df_performance.loc[df_performance["Area"] == area, "Name"].unique()))
     body_part = st.selectbox("Select Body Part", ["Lower", "Upper"])
+
+    # --- Family filter ---
+    available_families = sorted(df_performance.loc[
+        (df_performance["Area"] == area) &
+        (df_performance["Name"] == name) &
+        (df_performance["BodyPart"] == body_part),
+        "Family"
+    ].dropna().unique())
+    family = st.selectbox("Select Family", ["All"] + available_families)
 
     # --- Filter dataset ---
     filtered_df = df_performance[
         (df_performance["Area"] == area) &
         (df_performance["Name"] == name) &
         (df_performance["BodyPart"] == body_part)
-    ].sort_values("Date")
+    ]
+    if family != "All":
+        filtered_df = filtered_df[filtered_df["Family"] == family]
 
+    filtered_df = filtered_df.sort_values("Date")
+
+    # --- Handle empty results ---
     if filtered_df.empty:
-        st.warning("No records found for the selected combination.")
+        st.warning("⚠️ No records found for the selected combination.")
     else:
-        st.markdown("### 🏋️ Training Sessions")
-        #st.dataframe(filtered_df, use_container_width=True)
+        # --- Section header ---
+        st.markdown(f"### 🏋️ Training Sessions — {name} ({body_part} Body{'' if family == 'All' else f' – {family}'})")
         
         # --- Compute workload per session ---
         filtered_df["workload"] = filtered_df["Set"] * filtered_df["Rep"] * filtered_df["Load (kg)"]
         daily_workload = filtered_df.groupby("Date")["workload"].sum().reset_index()
-        
+
         # --- Compute fitness, fatigue, performance ---
         fitness, fatigue, performance = [], [], []
         for i, w in enumerate(daily_workload["workload"]):
@@ -512,20 +528,21 @@ elif page == "Performance Prediction Model":
         daily_workload["fitness"] = fitness
         daily_workload["fatigue"] = fatigue
         daily_workload["performance"] = performance
-        
-        # --- Plot performance ---
+
+        # --- Plot performance evolution ---
         fig, ax = plt.subplots(figsize=(5, 3))
+        title_suffix = f"{body_part} Body{'' if family == 'All' else f' – {family}'}"
         ax.plot(daily_workload["Date"], daily_workload["performance"], marker="o", color="blue")
-        ax.set_title("Performance Evolution")
+        ax.set_title(f"Performance Evolution – {title_suffix}")
         ax.set_xlabel("Date")
         ax.set_ylabel("Performance")
         ax.tick_params(axis='x', rotation=45)
         ax.grid(True, linestyle="--", alpha=0.6)
         fig.tight_layout()
         st.pyplot(fig)
-        
+
         # --- Next week prediction ---
-        st.markdown("### 🔮 Predict Next Session Performance")
+        st.markdown(f"### 🔮 Predict Next Session Performance ({title_suffix})")
         set_val = st.number_input("Set", value=4, min_value=1)
         rep_val = st.number_input("Rep", value=8, min_value=1)
         load_val = st.number_input("Load (kg)", value=20.0, min_value=0.0)
@@ -552,7 +569,7 @@ elif page == "Performance Prediction Model":
                     color="red", marker="o", linestyle="--", label="Predicted"
                 )
                 ax2.legend()
-                ax2.set_title("Next Performance Forecast")
+                ax2.set_title(f"Next Performance Forecast – {title_suffix}")
                 ax2.set_xlabel("Date")
                 ax2.set_ylabel("Performance")
                 ax2.grid(True, linestyle="--", alpha=0.5)
@@ -563,10 +580,10 @@ elif page == "Performance Prediction Model":
             with col2:
                 st.metric(label="Change (%)", value=f"{perf_change:.2f}%")
             
-        # --- Dataset Preview & Filters + Plots ---
+        # --- Dataset Preview ---
         with st.expander("🧮 Show Raw Athlete Data"):
             st.dataframe(filtered_df, use_container_width=True)
-                
+
 
 
 
