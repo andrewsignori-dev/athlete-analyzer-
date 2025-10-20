@@ -587,6 +587,10 @@ elif page == "Performance Prediction Model":
 
 
 elif page == "Injury":
+    import pandas as pd
+    import numpy as np
+    import streamlit as st
+
     st.title("🏃 Individual Training Parameter Risk Analysis")
     st.markdown("Explore risk zones for Set, Rep, and Load (kg) individually.")
     st.markdown("---")
@@ -601,19 +605,35 @@ elif page == "Injury":
     # Convert numeric columns safely
     for col in ["Set", "Rep", "Load (kg)"]:
         if col in df_injury.columns:
-            df_injury[col] = pd.to_numeric(df_injury[col].astype(str).str.replace(",", "."), errors="coerce").fillna(1)
+            df_injury[col] = (
+                pd.to_numeric(df_injury[col].astype(str).str.replace(",", "."), errors="coerce")
+                .fillna(1)
+                .round(0)
+            )
         else:
             df_injury[col] = 1
 
-    # --- Filters ---
+    # --- Dynamic Filters ---
+    st.subheader("🔎 Filter Data")
+
     name_options = ["All"] + sorted(df_injury["Name"].dropna().unique().tolist())
-    area_options = ["All"] + sorted(df_injury["Area"].dropna().unique().tolist())
-    family_options = ["All"] + sorted(df_injury["Family"].dropna().unique().tolist())
+    selected_name = st.selectbox("Select Name", name_options)
 
-    selected_name = st.selectbox("Name", name_options)
-    selected_area = st.selectbox("Area", area_options)
-    selected_family = st.selectbox("Family", family_options)
+    temp_df = df_injury.copy()
+    if selected_name != "All":
+        temp_df = temp_df[temp_df["Name"] == selected_name]
 
+    area_options = ["All"] + sorted(temp_df["Area"].dropna().unique().tolist())
+    selected_area = st.selectbox("Select Area", area_options)
+
+    temp_df2 = temp_df.copy()
+    if selected_area != "All":
+        temp_df2 = temp_df2[temp_df2["Area"] == selected_area]
+
+    family_options = ["All"] + sorted(temp_df2["Family"].dropna().unique().tolist())
+    selected_family = st.selectbox("Select Family", family_options)
+
+    # --- Apply Filters ---
     filtered_df = df_injury.copy()
     if selected_name != "All":
         filtered_df = filtered_df[filtered_df["Name"] == selected_name]
@@ -652,23 +672,21 @@ elif page == "Injury":
 
         return zone_series, thresholds
 
-    # --- Prepare a styled table for all parameters ---
-    import pandas as pd
-
+    # --- Compute results for each training parameter ---
     summary_rows = []
     for var, colname in [("Set", "Set"), ("Rep", "Rep"), ("Load (kg)", "Load (kg)")]:
         filtered_df[f"{colname}_Zone"], thr = compute_zones(filtered_df[colname])
 
-        summary = filtered_df[colname].describe().round(2)
+        summary = filtered_df[colname].describe().round(0)
         mean, std, minv, maxv, count = summary["mean"], summary["std"], summary["min"], summary["max"], int(summary["count"])
 
         summary_rows.append({
             "Parameter": var,
             "Observations": count,
-            "Mean": round(mean),
-            "Std Dev": round(std),
-            "Min": round(minv),
-            "Max": round(maxv),
+            "Mean": int(mean),
+            "Std Dev": int(std),
+            "Min": int(minv),
+            "Max": int(maxv),
             "🟩 Low": f"< {thr[0]}",
             "🟨 Moderate": f"{thr[0]} – {thr[1]}",
             "🟧 High": f"{thr[1]} – {thr[2]}",
@@ -677,7 +695,7 @@ elif page == "Injury":
 
     summary_df = pd.DataFrame(summary_rows)
 
-    # --- Style table with HTML colors ---
+    # --- Style table with HTML ---
     def colorize_zone(zone):
         if "Low" in zone:
             color = "#d4edda"  # light green
@@ -687,7 +705,7 @@ elif page == "Injury":
             color = "#ffe5b4"  # light orange
         else:
             color = "#f8d7da"  # light red
-        return f"background-color: {color}; border-radius: 5px; padding: 4px;"
+        return f"background-color: {color}; border-radius: 6px; padding: 4px;"
 
     styled_html = summary_df.to_html(index=False, escape=False).replace(
         '🟩 Low', f'<span style="{colorize_zone("Low")}">🟩 Low</span>'
@@ -705,10 +723,11 @@ elif page == "Injury":
     st.markdown("""
     **Interpretation:**
     - 🟩 **Low:** Light or recovery training intensity.  
-    - 🟨 **Moderate:** Typical or safe working range.  
-    - 🟧 **High:** 20% above typical maximum — increasing fatigue, monitor closely.  
-    - 🟥 **Very High:** 40%+ above max — potential overload, injury, or overtraining risk.  
+    - 🟨 **Moderate:** Normal and sustainable load.  
+    - 🟧 **High:** Fatigue accumulation likely; monitor closely.  
+    - 🟥 **Very High:** Potential overload or injury risk.  
     """)
+
 
 
 
