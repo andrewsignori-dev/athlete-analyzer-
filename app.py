@@ -614,10 +614,10 @@ elif page == "Injury":
     selected_area = st.selectbox("Area", area_options)
 
     filtered_df = df_injury.copy()
-    if selected_gender != "All":
-        filtered_df = filtered_df[filtered_df["Gender"] == selected_gender]
-    if selected_sport != "All":
-        filtered_df = filtered_df[filtered_df["Sport"] == selected_sport]
+    if selected_name != "All":
+        filtered_df = filtered_df[filtered_df["Name"] == selected_name]
+    if selected_area != "All":
+        filtered_df = filtered_df[filtered_df["Area"] == selected_area]
 
     # Compute workload stats
     mu = filtered_df["Workload"].mean()
@@ -627,7 +627,7 @@ elif page == "Injury":
     labels = ["Low", "Moderate", "High", "Very High"]
     filtered_df["RiskZone"] = pd.cut(filtered_df["Workload"], bins=[-np.inf] + thresholds + [np.inf], labels=labels)
 
-    st.subheader(f"📊 Workload Distribution – {selected_sport if selected_sport != 'All' else 'All Sports'}")
+    st.subheader(f"📊 Workload Distribution – {selected_area if selected_area != 'All' else 'All Areas'}")
 
     fig, ax = plt.subplots(figsize=(5, 3))
     sns.histplot(filtered_df["Workload"], kde=True, bins=10, color="#1f77b4", ax=ax)
