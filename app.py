@@ -35,11 +35,14 @@ page = st.sidebar.radio("Navigate to", ["Athlete Ability", "Injury Risk Model", 
 sns.set_theme(style="whitegrid")
 
 # ---------------------------
-# Small Figure Sizes
+# Small Figure Sizes & Style
 # ---------------------------
-fig_width = 4.5
+fig_width = 4
 fig_height = 3
-font_size = 6
+font_size = 7
+bar_colors = ["#2ca02c" if v >= 0 else "#d62728" for v in filtered_df[abilities].mean()]
+
+sns.set_theme(style="whitegrid")
 
 # ---------------------------
 # Athlete Ability Page
@@ -49,9 +52,8 @@ if page == "Athlete Ability":
     st.markdown("Explore standardized abilities of athletes and evaluate a new athlete.")
     st.markdown("---")
 
-    # --- In-page Filters ---
+    # --- Filters ---
     st.subheader("🎯 Filter Athletes")
-
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -78,31 +80,12 @@ if page == "Athlete Ability":
     ]
 
     st.markdown("---")
+    st.subheader(f"📊 Filtered Athletes: {len(filtered_df)} records")
 
-    # --- Display Filtered Results ---
-    st.subheader("📊 Filtered Athlete Dataset")
-    st.write(f"**Total Athletes:** {len(filtered_df)}")
-    st.dataframe(filtered_df, use_container_width=True)
-
-    # --- Optional Summary Section ---
-    st.markdown("### 🧭 Summary Insights")
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.metric("Average Age", f"{filtered_df['Age'].mean():.1f}")
-        if "Gender" in filtered_df.columns:
-            male_ratio = filtered_df["Gender"].eq("Male").mean() * 100
-            st.metric("Male %", f"{male_ratio:.1f}%")
-
-    with col2:
-        if "Sport" in filtered_df.columns:
-            st.metric("Unique Sports", f"{filtered_df['Sport'].nunique()}")
-        st.metric("Total Records", f"{len(filtered_df)}")
-
-    # --- Row 1: Bar & Box ---
-    col1, col2 = st.columns(2)
-
-    # Bar Plot
+    # --- Row 1: Average Abilities Bar & Box Plot ---
+    col1, col2 = st.columns([1,1])
+    
+    # Bar plot of mean abilities
     with col1:
         avg_values = filtered_df[abilities].mean()
         colors = ["#2ca02c" if v >= 0 else "#d62728" for v in avg_values]
@@ -111,19 +94,19 @@ if page == "Athlete Ability":
         ax_bar.axhline(0, color="black", linestyle="--")
         ax_bar.set_ylabel("Z-score", fontsize=font_size)
         ax_bar.set_xlabel("Ability", fontsize=font_size)
-        ax_bar.tick_params(axis='x', labelsize=font_size)
+        ax_bar.tick_params(axis='x', labelrotation=45, labelsize=font_size)
         ax_bar.tick_params(axis='y', labelsize=font_size)
         fig_bar.tight_layout()
         st.subheader("📊 Average Abilities")
         st.pyplot(fig_bar)
 
-    # Box Plot
+    # Boxplot distribution
     with col2:
         melted = filtered_df.melt(id_vars=["AthleteID"], value_vars=abilities, var_name="Ability", value_name="Z-Score")
         fig_box, ax_box = plt.subplots(figsize=(fig_width, fig_height))
-        sns.boxplot(x="Ability", y="Z-Score", data=melted, palette="coolwarm", ax=ax_box)
+        sns.boxplot(x="Ability", y="Z-Score", data=melted, palette="vlag", ax=ax_box)
         ax_box.axhline(0, color="black", linestyle="--")
-        ax_box.tick_params(axis='x', labelsize=font_size)
+        ax_box.tick_params(axis='x', labelrotation=45, labelsize=font_size)
         ax_box.tick_params(axis='y', labelsize=font_size)
         ax_box.set_xlabel("Ability", fontsize=font_size)
         fig_box.tight_layout()
@@ -133,18 +116,19 @@ if page == "Athlete Ability":
     st.markdown("---")
 
     # --- Row 2: Radar & Heatmap ---
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([1,1])
 
-    # Radar Chart
+    # Radar chart
     with col1:
         avg_values_radar = filtered_df[abilities].mean().values
         num_vars = len(abilities)
         angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
         avg_values_loop = np.concatenate((avg_values_radar, [avg_values_radar[0]]))
         angles_loop = angles + angles[:1]
+
         fig_radar, ax_radar = plt.subplots(figsize=(fig_width, fig_height), subplot_kw=dict(polar=True))
-        ax_radar.plot(angles_loop, avg_values_loop, color="blue", linewidth=1.5)
-        ax_radar.fill(angles_loop, avg_values_loop, color="skyblue", alpha=0.25)
+        ax_radar.plot(angles_loop, avg_values_loop, color="#1f77b4", linewidth=1.5)
+        ax_radar.fill(angles_loop, avg_values_loop, color="#1f77b4", alpha=0.25)
         ax_radar.set_xticks(angles)
         ax_radar.set_xticklabels(abilities, fontsize=font_size-1)
         ax_radar.set_yticklabels(np.round(ax_radar.get_yticks(), 2), fontsize=font_size)
@@ -153,22 +137,20 @@ if page == "Athlete Ability":
         st.subheader("📡 Overall Ability Profile")
         st.pyplot(fig_radar)
 
-    # Heatmap
+    # Heatmap of correlations
     with col2:
         corr = filtered_df[abilities].corr()
         fig_corr, ax_corr = plt.subplots(figsize=(fig_width, fig_height))
         sns.heatmap(corr, annot=True, cmap="coolwarm", linewidths=0.5, ax=ax_corr, annot_kws={"size": font_size})
-        ax_corr.set_title("Correlation Between Abilities", fontsize=font_size)
+        ax_corr.set_title("🔥 Ability Correlations", fontsize=font_size)
         fig_corr.tight_layout()
-        st.subheader("🔥 Ability Correlations")
         st.pyplot(fig_corr)
 
-    # ---------------------------
-    # Evaluate a New Athlete (Collapsible Section)
-    # ---------------------------
+    st.markdown("---")
+
+    # --- Evaluate a New Athlete (Expander Section) ---
     with st.expander("🏅 Evaluate a New Athlete"):
-        st.markdown("Input ability levels for a new athlete and compare them to the reference group.")
-        st.markdown("---")
+        st.markdown("Input ability levels and compare them to a reference group.")
 
         # Reference group selection
         ref_group = st.selectbox("Reference Group", ["All", "Gender", "Sport"])
@@ -195,58 +177,40 @@ if page == "Athlete Ability":
         new_athlete_df = pd.DataFrame([athlete_input])
         new_athlete_scaled = pd.DataFrame(scaler.transform(new_athlete_df), columns=abilities)
 
-        # Compute reference average
+        # Comparison bar chart
         avg_values_ref = ref_df[abilities].mean()
         new_values = new_athlete_scaled.iloc[0]
 
-        # --- Summary Text ---
-        st.markdown("### 🧾 Summary")
-        differences = new_values - avg_values_ref
-        above = differences[differences > 0].index.tolist()
-        below = differences[differences < 0].index.tolist()
-        summary_text = ""
-        if above:
-            summary_text += f"**Above average in:** {', '.join(above)}  \n"
-        if below:
-            summary_text += f"**Below average in:** {', '.join(below)}  \n"
-        if not above and not below:
-            summary_text = "This athlete's abilities are around the reference group average."
-        st.markdown(summary_text)
-
-        # Comparison Bar Chart
         st.subheader("📊 Comparison to Reference Average")
-        fig_bar_eval, ax_bar_eval = plt.subplots(figsize=(3.5, 2))
+        fig_bar_eval, ax_bar_eval = plt.subplots(figsize=(fig_width, fig_height))
         x = np.arange(len(abilities))
         width = 0.35
         ax_bar_eval.bar(x - width/2, avg_values_ref, width, label=legend_label, color='#888888')
         ax_bar_eval.bar(x + width/2, new_values, width, label='New Athlete', color='#1f77b4')
         ax_bar_eval.axhline(0, color="black", linestyle="--")
         ax_bar_eval.set_xticks(x)
-        ax_bar_eval.set_xticklabels(abilities, fontsize=font_size)
+        ax_bar_eval.set_xticklabels(abilities, fontsize=font_size, rotation=45)
         ax_bar_eval.set_ylabel("Z-score", fontsize=font_size)
         ax_bar_eval.tick_params(axis='y', labelsize=font_size)
         ax_bar_eval.legend(fontsize=font_size)
         fig_bar_eval.tight_layout()
         st.pyplot(fig_bar_eval)
 
-        # Boxplot overlay
+        # Boxplot overlay with athlete points
         st.subheader("📡 Percentile Placement")
-        fig_box_overlay, ax_box_overlay = plt.subplots(figsize=(3.5, 2))
+        fig_box_overlay, ax_box_overlay = plt.subplots(figsize=(fig_width, fig_height))
         melted_ref = ref_df.melt(id_vars=["AthleteID"], value_vars=abilities, var_name="Ability", value_name="Z-Score")
-        sns.boxplot(x="Ability", y="Z-Score", data=melted_ref, palette="coolwarm", ax=ax_box_overlay)
+        sns.boxplot(x="Ability", y="Z-Score", data=melted_ref, palette="vlag", ax=ax_box_overlay)
         ax_box_overlay.axhline(0, color="black", linestyle="--")
-        ax_box_overlay.tick_params(axis='x', labelsize=font_size)
+        ax_box_overlay.tick_params(axis='x', labelrotation=45, labelsize=font_size)
         ax_box_overlay.tick_params(axis='y', labelsize=font_size)
         ax_box_overlay.set_ylabel("Z-score", fontsize=font_size)
         ax_box_overlay.set_xlabel("Ability", fontsize=font_size)
 
-        # Overlay new athlete points
         for i, ability in enumerate(abilities):
             ax_box_overlay.scatter(i, new_values[ability], color="#1f77b4", s=50, zorder=10,
-                                   label="New Athlete" if i == 0 else "")
-        ax_box_overlay.legend(fontsize=font_size)
-        fig_box_overlay.tight_layout()
-        st.pyplot(fig_box_overlay)
+                                   label
+
 
 # ---------------------------
 # Injury Risk Model Page
