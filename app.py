@@ -208,8 +208,18 @@ if page == "Athlete Ability":
         ax_box_overlay.set_xlabel("Ability", fontsize=font_size)
 
         for i, ability in enumerate(abilities):
-            ax_box_overlay.scatter(i, new_values[ability], color="#1f77b4", s=50, zorder=10,
-                                   label)
+            ax_box_overlay.scatter(
+                i, new_values[ability], color="#1f77b4", s=50, zorder=10,
+                label="New Athlete" if i == 0 else ""
+            )
+
+        # Only show legend once
+        handles, labels = ax_box_overlay.get_legend_handles_labels()
+        if handles:
+            ax_box_overlay.legend(handles=[handles[0]], labels=[labels[0]], fontsize=font_size)
+
+        fig_box_overlay.tight_layout()
+        st.pyplot(fig_box_overlay)
 
 
 # ---------------------------
