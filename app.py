@@ -591,17 +591,20 @@ elif page == "Injury":
     st.markdown("Explore workload distributions and identify potential overload zones.")
     st.markdown("---")
 
+    # Load dataset
     df_injury = pd.read_excel("All_data.xlsx")
-    print(df_injury.columns.tolist())
 
-    
-    # Replace NaNs in set, rep, and load with 1
-    df_injury["Set"] = df_injury["Set"].fillna(1)
-    df_injury["Rep"] = df_injury["Rep"].fillna(1)
-    df_injury["Load (kg)"] = df_injury["Load (kg)"].fillna(1)
+    # --- Standardize column names ---
+    df_injury.columns = df_injury.columns.str.strip().str.lower().str.replace(" ", "_").str.replace(r"[()]", "", regex=True)
 
-    # Compute workload (set × rep × load)
-    df_injury["Workload"] = df_injury["Set"] * df_injury["Rep"] * df_injury["Load (kg)"]
+
+    # --- Fill missing values for workload computation ---
+    df_injury["set"] = df_injury["set"].fillna(1)
+    df_injury["rep"] = df_injury["rep"].fillna(1)
+    df_injury["load_kg"] = df_injury["load_kg"].fillna(1)
+
+    # --- Compute Workload ---
+    df_injury["Workload"] = df_injury["set"] * df_injury["rep"] * df_injury["load_kg"]
     df_injury["Workload"] = pd.to_numeric(df_injury["Workload"].astype(str).str.replace(",", "."), errors="coerce")
 
     # Filters
