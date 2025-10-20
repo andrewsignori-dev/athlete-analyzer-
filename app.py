@@ -598,7 +598,7 @@ elif page == "Injury":
     df_injury.columns = df_injury.columns.str.strip()
     df_injury["Date"] = pd.to_datetime(df_injury["Date"], errors="coerce")
 
-    # Convert numeric columns, fill NaN with 1 to ensure safe computation
+    # Convert numeric columns safely
     for col in ["Set", "Rep", "Load (kg)"]:
         if col in df_injury.columns:
             df_injury[col] = pd.to_numeric(df_injury[col].astype(str).str.replace(",", "."), errors="coerce").fillna(1)
@@ -624,59 +624,92 @@ elif page == "Injury":
 
     st.subheader(f"📊 Training Parameter Risk Zones – {selected_area if selected_area != 'All' else 'All Areas'}")
 
-    # --- Function to compute zones safely ---
+    # --- Function to compute zones (based on max value + 20–40%) ---
     def compute_zones(series):
         series = pd.to_numeric(series, errors="coerce").dropna()
         if series.empty:
-            return pd.Series(["No data"] * len(series)), [0, 0, 0]
+            return pd.Series(["No data"] * len(series)), [0, 0, 0, 0]
 
         mu = series.mean()
-        sigma = series.std()
+        max_val = series.max()
 
-        if sigma < 1e-6:
-            sigma = mu * 0.1 if mu > 0 else 1
-
-        low = max(mu - sigma, 0)
+        low = max(mu * 0.5, 0)
         moderate = mu
-        high = mu + sigma
-        thresholds = sorted(list(set([round(low), round(moderate), round(high)])))
+        high = max_val * 1.20
+        very_high = max_val * 1.40
 
-        while len(thresholds) < 3:
-            thresholds.append(thresholds[-1] + 1)
-
+        thresholds = [round(low), round(moderate), round(high), round(very_high)]
         labels = ["Low", "Moderate", "High", "Very High"]
+
+        thresholds = sorted(list(set(thresholds)))
+        while len(thresholds) < 4:
+            thresholds.append(thresholds[-1] + 1)
 
         try:
             zone_series = pd.cut(series, bins=[-np.inf] + thresholds + [np.inf], labels=labels)
         except ValueError:
-            thresholds = [0, 1, 2]
-            zone_series = pd.cut(series, bins=[-np.inf, 0, 1, 2, np.inf], labels=labels)
+            zone_series = pd.Series(["Undefined"] * len(series))
 
         return zone_series, thresholds
 
-    # --- Compute and display ---
+    # --- Prepare a styled table for all parameters ---
+    import pandas as pd
+
+    summary_rows = []
     for var, colname in [("Set", "Set"), ("Rep", "Rep"), ("Load (kg)", "Load (kg)")]:
         filtered_df[f"{colname}_Zone"], thr = compute_zones(filtered_df[colname])
 
-        # Summary statistics
         summary = filtered_df[colname].describe().round(2)
         mean, std, minv, maxv, count = summary["mean"], summary["std"], summary["min"], summary["max"], int(summary["count"])
 
-        st.markdown(f"### ⚙️ {var}")
-        st.markdown(f"""
-        **Data summary:**
-        - Observations: {count}
-        - Mean: **{mean:.0f}**
-        - Std Dev: **{std:.0f}**
-        - Min: **{minv:.0f}**, Max: **{maxv:.0f}**
+        summary_rows.append({
+            "Parameter": var,
+            "Observations": count,
+            "Mean": round(mean),
+            "Std Dev": round(std),
+            "Min": round(minv),
+            "Max": round(maxv),
+            "🟩 Low": f"< {thr[0]}",
+            "🟨 Moderate": f"{thr[0]} – {thr[1]}",
+            "🟧 High": f"{thr[1]} – {thr[2]}",
+            "🟥 Very High": f"> {thr[2]}"
+        })
 
-        **Risk thresholds (rounded):**
-        - 🟩 Low *(easy or recovery load)*: < {thr[0]}
-        - 🟨 Moderate *(typical training)*: {thr[0]} – {thr[1]}
-        - 🟧 High *(challenging load)*: {thr[1]} – {thr[2]}
-        - 🟥 Very High *(potential overload or injury risk)*: > {thr[2]}
-        """)
-        st.markdown("---")
+    summary_df = pd.DataFrame(summary_rows)
+
+    # --- Style table with HTML colors ---
+    def colorize_zone(zone):
+        if "Low" in zone:
+            color = "#d4edda"  # light green
+        elif "Moderate" in zone:
+            color = "#fff3cd"  # light yellow
+        elif "High" in zone:
+            color = "#ffe5b4"  # light orange
+        else:
+            color = "#f8d7da"  # light red
+        return f"background-color: {color}; border-radius: 5px; padding: 4px;"
+
+    styled_html = summary_df.to_html(index=False, escape=False).replace(
+        '🟩 Low', f'<span style="{colorize_zone("Low")}">🟩 Low</span>'
+    ).replace(
+        '🟨 Moderate', f'<span style="{colorize_zone("Moderate")}">🟨 Moderate</span>'
+    ).replace(
+        '🟧 High', f'<span style="{colorize_zone("High")}">🟧 High</span>'
+    ).replace(
+        '🟥 Very High', f'<span style="{colorize_zone("Very High")}">🟥 Very High</span>'
+    )
+
+    st.markdown("### 📈 Risk Threshold Overview")
+    st.markdown(styled_html, unsafe_allow_html=True)
+
+    st.markdown("""
+    **Interpretation:**
+    - 🟩 **Low:** Light or recovery training intensity.  
+    - 🟨 **Moderate:** Typical or safe working range.  
+    - 🟧 **High:** 20% above typical maximum — increasing fatigue, monitor closely.  
+    - 🟥 **Very High:** 40%+ above max — potential overload, injury, or overtraining risk.  
+    """)
+
 
 
 
