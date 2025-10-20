@@ -592,6 +592,9 @@ elif page == "Injury":
     st.markdown("---")
 
     df_injury = pd.read_excel("All_data.xlsx")
+    print(df_injury.columns.tolist())
+
+    
     # Replace NaNs in set, rep, and load with 1
     df_injury["Set"] = df_injury["Set"].fillna(1)
     df_injury["Rep"] = df_injury["Rep"].fillna(1)
