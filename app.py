@@ -587,8 +587,8 @@ elif page == "Performance Prediction Model":
 
 
 elif page == "Injury":
-    st.title("🏋️ Individual Training Parameter Risk Analysis")
-    st.markdown("Easily identify the **intensity zones** for Set, Rep, and Load (kg) to assess potential overload risks.")
+    st.title("🏃 Individual Training Parameter Risk Analysis")
+    st.markdown("Explore risk zones for Set, Rep, and Load (kg) individually.")
     st.markdown("---")
 
     # --- Load dataset ---
@@ -623,69 +623,61 @@ elif page == "Injury":
         filtered_df = filtered_df[filtered_df["Family"] == selected_family]
 
     st.subheader(f"📊 Training Parameter Risk Zones – {selected_area if selected_area != 'All' else 'All Areas'}")
-    st.markdown("Zones are calculated using mean ± standard deviation for each parameter (Set, Rep, Load).")
 
-    # --- Function to compute zones ---
+    # --- Function to compute zones safely ---
     def compute_zones(series):
+        series = pd.to_numeric(series, errors="coerce").dropna()
+        if series.empty:
+            return pd.Series(["No data"] * len(series)), [0, 0, 0]
+
         mu = series.mean()
         sigma = series.std()
-        # Ensure no negative thresholds
+
+        if sigma < 1e-6:
+            sigma = mu * 0.1 if mu > 0 else 1
+
         low = max(mu - sigma, 0)
         moderate = mu
         high = mu + sigma
-        thresholds = [round(low), round(moderate), round(high)]
+        thresholds = sorted(list(set([round(low), round(moderate), round(high)])))
+
+        while len(thresholds) < 3:
+            thresholds.append(thresholds[-1] + 1)
+
         labels = ["Low", "Moderate", "High", "Very High"]
-        zone_series = pd.cut(series, bins=[-np.inf] + thresholds + [np.inf], labels=labels)
+
+        try:
+            zone_series = pd.cut(series, bins=[-np.inf] + thresholds + [np.inf], labels=labels)
+        except ValueError:
+            thresholds = [0, 1, 2]
+            zone_series = pd.cut(series, bins=[-np.inf, 0, 1, 2, np.inf], labels=labels)
+
         return zone_series, thresholds
 
-    # Compute zones
-    filtered_df["Set_Zone"], set_thr = compute_zones(filtered_df["Set"])
-    filtered_df["Rep_Zone"], rep_thr = compute_zones(filtered_df["Rep"])
-    filtered_df["Load_Zone"], load_thr = compute_zones(filtered_df["Load (kg)"])
+    # --- Compute and display ---
+    for var, colname in [("Set", "Set"), ("Rep", "Rep"), ("Load (kg)", "Load (kg)")]:
+        filtered_df[f"{colname}_Zone"], thr = compute_zones(filtered_df[colname])
 
-    # --- Display results in columns ---
-    col1, col2, col3 = st.columns(3)
+        # Summary statistics
+        summary = filtered_df[colname].describe().round(2)
+        mean, std, minv, maxv, count = summary["mean"], summary["std"], summary["min"], summary["max"], int(summary["count"])
 
-    def display_zone_info(title, thresholds):
-        low, moderate, high = thresholds
-        st.markdown(f"### {title}")
-        st.markdown(
-            f"""
-            <div style='background-color:#e8f5e9;padding:8px;border-radius:8px;margin-bottom:5px'>
-            🟢 <b>Low (Recovery Zone):</b> < {low}
-            </div>
-            <div style='background-color:#fff3e0;padding:8px;border-radius:8px;margin-bottom:5px'>
-            🟡 <b>Moderate (Normal Load):</b> {low} – {moderate}
-            </div>
-            <div style='background-color:#ffe0b2;padding:8px;border-radius:8px;margin-bottom:5px'>
-            🟠 <b>High (Challenging Zone):</b> {moderate} – {high}
-            </div>
-            <div style='background-color:#ffccbc;padding:8px;border-radius:8px;margin-bottom:5px'>
-            🔴 <b>Very High (Overload Risk):</b> > {high}
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        st.markdown(f"### ⚙️ {var}")
+        st.markdown(f"""
+        **Data summary:**
+        - Observations: {count}
+        - Mean: **{mean:.0f}**
+        - Std Dev: **{std:.0f}**
+        - Min: **{minv:.0f}**, Max: **{maxv:.0f}**
 
-    with col1:
-        display_zone_info("Set", set_thr)
-    with col2:
-        display_zone_info("Rep", rep_thr)
-    with col3:
-        display_zone_info("Load (kg)", load_thr)
+        **Risk thresholds (rounded):**
+        - 🟩 Low *(easy or recovery load)*: < {thr[0]}
+        - 🟨 Moderate *(typical training)*: {thr[0]} – {thr[1]}
+        - 🟧 High *(challenging load)*: {thr[1]} – {thr[2]}
+        - 🟥 Very High *(potential overload or injury risk)*: > {thr[2]}
+        """)
+        st.markdown("---")
 
-    # --- Explanatory text ---
-    st.markdown("---")
-    st.markdown("""
-    ### 📘 Interpretation Guide
-
-    - **Low Zone (🟢)** → Light effort or recovery session, minimal fatigue risk.  
-    - **Moderate Zone (🟡)** → Usual training intensity, sustainable workload.  
-    - **High Zone (🟠)** → Above normal; increases adaptation stimulus but also fatigue.  
-    - **Very High Zone (🔴)** → Significantly higher than average — **potential overload or injury risk**, especially if repeated or unplanned.
-
-    These thresholds adapt dynamically based on your filtered dataset (Name, Area, Family).
-    """)
 
 
 
