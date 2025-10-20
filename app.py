@@ -593,9 +593,9 @@ elif page == "Injury":
 
     df_injury = pd.read_excel("All_data.xlsx")
     # Replace NaNs in set, rep, and load with 1
-    df_injury["set"] = df_injury["Set"].fillna(1)
-    df_injury["rep"] = df_injury["Rep"].fillna(1)
-    df_injury["load (kg)"] = df_injury["Load (kg)"].fillna(1)
+    df_injury["Set"] = df_injury["Set"].fillna(1)
+    df_injury["Rep"] = df_injury["Rep"].fillna(1)
+    df_injury["Load (kg)"] = df_injury["Load (kg)"].fillna(1)
 
     # Compute workload (set × rep × load)
     df_injury["Workload"] = df_injury["Set"] * df_injury["Rep"] * df_injury["Load (kg)"]
