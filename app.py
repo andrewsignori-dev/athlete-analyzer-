@@ -81,7 +81,7 @@ if page == "Athlete Ability":
 
     st.markdown("---")
       # --- Display Filtered Results ---
-    st.subheader("📊 Filtered Athlete Dataset")
+    st.subheader("🔎 Filter Data")
     st.write(f"**Total Athletes:** {len(filtered_df)}")
     st.dataframe(filtered_df, use_container_width=True)
 
@@ -412,7 +412,7 @@ elif page == "Performance Prediction Model":
     df_performance["BodyPart"] = np.where(df_performance["Family"].isin(lower_list), "Lower", "Upper")
 
     # --- Sidebar filters ---
-    st.sidebar.markdown("### 🔍 Filter Options")
+    st.subheader("🔎 Filter Data")
 
     area = st.selectbox("Select Area", sorted(df_performance["Area"].unique()))
     name = st.selectbox("Select Name", sorted(df_performance.loc[df_performance["Area"] == area, "Name"].unique()))
