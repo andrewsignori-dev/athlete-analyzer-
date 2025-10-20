@@ -533,9 +533,9 @@ elif page == "Performance Prediction Model":
         fig, ax = plt.subplots(figsize=(5, 3))
         title_suffix = f"{body_part} Body{'' if family == 'All' else f' – {family}'}"
         ax.plot(daily_workload["Date"], daily_workload["performance"], marker="o", color="blue")
-        ax.set_title(f"Performance Evolution – {title_suffix}")
+        ax.set_title(f"Training Level Evolution – {title_suffix}")
         ax.set_xlabel("Date")
-        ax.set_ylabel("Performance")
+        ax.set_ylabel("Fitness level")
         ax.tick_params(axis='x', rotation=45)
         ax.grid(True, linestyle="--", alpha=0.6)
         fig.tight_layout()
@@ -546,7 +546,7 @@ elif page == "Performance Prediction Model":
         set_val = st.number_input("Set", value=4, min_value=1)
         rep_val = st.number_input("Rep", value=8, min_value=1)
         load_val = st.number_input("Load (kg)", value=20.0, min_value=0.0)
-        predict = st.button("Predict Next Performance")
+        predict = st.button("Predict Next Training Level")
         
         if predict:
             w_new = set_val * rep_val * load_val
@@ -569,9 +569,9 @@ elif page == "Performance Prediction Model":
                     color="red", marker="o", linestyle="--", label="Predicted"
                 )
                 ax2.legend()
-                ax2.set_title(f"Next Performance Forecast – {title_suffix}")
+                ax2.set_title(f"Training level Forecast – {title_suffix}")
                 ax2.set_xlabel("Date")
-                ax2.set_ylabel("Performance")
+                ax2.set_ylabel("Fitness level")
                 ax2.grid(True, linestyle="--", alpha=0.5)
                 ax2.tick_params(axis='x', rotation=45)
                 fig2.tight_layout()
