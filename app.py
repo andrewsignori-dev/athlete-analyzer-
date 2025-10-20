@@ -595,7 +595,7 @@ elif page == "Injury":
     df_injury = pd.read_excel("All_data.xlsx")
 
     # --- Data cleaning ---
-    df_injury.columns = df_performance.columns.str.strip()
+    df_injury.columns = df_injury.columns.str.strip()
     df_injury["Date"] = pd.to_datetime(df_injury["Date"], errors="coerce")
     df_injury["Load (kg)"] = pd.to_numeric(df_injury["Load (kg)"], errors="coerce").fillna(0)
     df_injury["Set"] = pd.to_numeric(df_injury["Set"], errors="coerce").fillna(0)
