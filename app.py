@@ -27,7 +27,7 @@ df_scaled[abilities] = scaler.fit_transform(df[abilities])
 # Sidebar Filters
 # ---------------------------
 st.sidebar.title("⚡ Athlete Dashboard Filters")
-page = st.sidebar.radio("Navigate to", ["Athlete Ability", "Injury Risk Model", "Performance Prediction Model","Injury"])
+page = st.sidebar.radio("Navigate to", ["Athlete Ability", "Injury Risk Model", "Performance Prediction Model"])
 
 # ---------------------------
 # Seaborn theme
@@ -252,199 +252,142 @@ if page == "Athlete Ability":
 # Injury Risk Model Page
 # ---------------------------
 elif page == "Injury Risk Model":
-    st.title("🏃 Injury Risk Model")
-    st.markdown("Estimate the workload threshold (Kg) associated with a target injury probability")
+    st.title("🏃 Individual Training Parameter Risk Analysis")
+    st.markdown("Explore risk zones for Set, Rep, and Load (kg) individually.")
     st.markdown("---")
 
-    # Load dataset
-    df_injury = pd.read_excel("synthetic_athlete_injury.xlsx")
+    # --- Load dataset ---
+    df_injury = pd.read_excel("All_data.xlsx")
 
-    # --- In-page Filters ---
-    st.subheader("🎯 Filter Dataset Before Prediction")
-    col1, col2 = st.columns(2)
+    # --- Data cleaning ---
+    df_injury.columns = df_injury.columns.str.strip()
+    df_injury["Date"] = pd.to_datetime(df_injury["Date"], errors="coerce")
 
-    with col1:
-        gender_options = ["All"] + sorted(df_injury["Gender"].dropna().unique().tolist())
-        selected_gender = st.selectbox("Gender", gender_options)
+    # Convert numeric columns safely
+    for col in ["Set", "Rep", "Load (kg)"]:
+        if col in df_injury.columns:
+            df_injury[col] = (
+                pd.to_numeric(df_injury[col].astype(str).str.replace(",", "."), errors="coerce")
+                .fillna(1)
+                .round(0)
+            )
+        else:
+            df_injury[col] = 1
 
-    with col2:
-        sport_options = ["All"] + sorted(df_injury["Sport"].dropna().unique().tolist())
-        selected_sport = st.selectbox("Sport", sport_options)
+    # --- Dynamic Filters ---
+    st.subheader("🔎 Filter Data")
 
-    # Apply filters
+    name_options = ["All"] + sorted(df_injury["Name"].dropna().unique().tolist())
+    selected_name = st.selectbox("Select Name", name_options)
+
+    temp_df = df_injury.copy()
+    if selected_name != "All":
+        temp_df = temp_df[temp_df["Name"] == selected_name]
+
+    area_options = ["All"] + sorted(temp_df["Area"].dropna().unique().tolist())
+    selected_area = st.selectbox("Select Area", area_options)
+
+    temp_df2 = temp_df.copy()
+    if selected_area != "All":
+        temp_df2 = temp_df2[temp_df2["Area"] == selected_area]
+
+    family_options = ["All"] + sorted(temp_df2["Family"].dropna().unique().tolist())
+    selected_family = st.selectbox("Select Family", family_options)
+
+    # --- Apply Filters ---
     filtered_df = df_injury.copy()
-    if selected_gender != "All":
-        filtered_df = filtered_df[filtered_df["Gender"] == selected_gender]
-    if selected_sport != "All":
-        filtered_df = filtered_df[filtered_df["Sport"] == selected_sport]
+    if selected_name != "All":
+        filtered_df = filtered_df[filtered_df["Name"] == selected_name]
+    if selected_area != "All":
+        filtered_df = filtered_df[filtered_df["Area"] == selected_area]
+    if selected_family != "All":
+        filtered_df = filtered_df[filtered_df["Family"] == selected_family]
 
-    # If no data left after filtering, stop
-    if filtered_df.empty:
-        st.warning("⚠️ No data available for the selected filters. Please adjust your selection.")
-        st.stop()
+    st.subheader(f"📊 Training Parameter Risk Zones – {selected_area if selected_area != 'All' else 'All Areas'}")
 
-    st.markdown("---")
+    # --- Function to compute zones (based on max value + 20–40%) ---
+    def compute_zones(series):
+        series = pd.to_numeric(series, errors="coerce").dropna()
+        if series.empty:
+            return pd.Series(["No data"] * len(series)), [0, 0, 0, 0]
 
-    # Seaborn theme and figure sizing
-    sns.set_theme(style="whitegrid")
-    fig_width = 4.5
-    fig_height = 3
-    font_size = 6
+        mu = series.mean()
+        max_val = series.max()
 
-    # --- Fit logistic regression model ---
-    X = sm.add_constant(filtered_df["Workload"])
-    y = filtered_df["Injury"]
-    model = sm.Logit(y, X).fit(disp=False)
-    beta0_hat, beta1_hat = model.params
+        low = max(mu * 0.5, 0)
+        moderate = mu
+        high = max_val * 1.20
+        very_high = max_val * 1.40
 
-    # --- Injury probability slider ---
-    prob_target_percent = st.slider(
-        "🎯 Target injury probability (%)",
-        min_value=0,
-        max_value=100,
-        value=20,
-        step=1,
-        help="Select the target injury probability to compute the workload threshold (Kg)."
+        thresholds = [round(low), round(moderate), round(high), round(very_high)]
+        labels = ["Low", "Moderate", "High", "Very High"]
+
+        thresholds = sorted(list(set(thresholds)))
+        while len(thresholds) < 4:
+            thresholds.append(thresholds[-1] + 1)
+
+        try:
+            zone_series = pd.cut(series, bins=[-np.inf] + thresholds + [np.inf], labels=labels)
+        except ValueError:
+            zone_series = pd.Series(["Undefined"] * len(series))
+
+        return zone_series, thresholds
+
+    # --- Compute results for each training parameter ---
+    summary_rows = []
+    for var, colname in [("Set", "Set"), ("Rep", "Rep"), ("Load (kg)", "Load (kg)")]:
+        filtered_df[f"{colname}_Zone"], thr = compute_zones(filtered_df[colname])
+
+        summary = filtered_df[colname].describe().round(0)
+        mean, std, minv, maxv, count = summary["mean"], summary["std"], summary["min"], summary["max"], int(summary["count"])
+
+        summary_rows.append({
+            "Parameter": var,
+            "Observations": count,
+            "Mean": int(mean),
+            "Std Dev": int(std),
+            "Min": int(minv),
+            "Max": int(maxv),
+            "🟩 Low": f"< {thr[0]}",
+            "🟨 Moderate": f"{thr[0]} – {thr[1]}",
+            "🟧 High": f"{thr[1]} – {thr[2]}",
+            "🟥 Very High": f"> {thr[2]}"
+        })
+
+    summary_df = pd.DataFrame(summary_rows)
+
+    # --- Style table with HTML ---
+    def colorize_zone(zone):
+        if "Low" in zone:
+            color = "#d4edda"  # light green
+        elif "Moderate" in zone:
+            color = "#fff3cd"  # light yellow
+        elif "High" in zone:
+            color = "#ffe5b4"  # light orange
+        else:
+            color = "#f8d7da"  # light red
+        return f"background-color: {color}; border-radius: 6px; padding: 4px;"
+
+    styled_html = summary_df.to_html(index=False, escape=False).replace(
+        '🟩 Low', f'<span style="{colorize_zone("Low")}">🟩 Low</span>'
+    ).replace(
+        '🟨 Moderate', f'<span style="{colorize_zone("Moderate")}">🟨 Moderate</span>'
+    ).replace(
+        '🟧 High', f'<span style="{colorize_zone("High")}">🟧 High</span>'
+    ).replace(
+        '🟥 Very High', f'<span style="{colorize_zone("Very High")}">🟥 Very High</span>'
     )
 
-    # --- Compute threshold and bootstrap CI ---
-    X_target = prob_target_percent / 100
-    w_star = (logit(X_target) - beta0_hat) / beta1_hat
+    st.markdown("### 📈 Risk Threshold Overview")
+    st.markdown(styled_html, unsafe_allow_html=True)
 
-    B = 200
-    w_star_boot = []
-    for _ in range(B):
-        sample = filtered_df.sample(n=len(filtered_df), replace=True)
-        Xb = sm.add_constant(sample["Workload"])
-        yb = sample["Injury"]
-        try:
-            mb = sm.Logit(yb, Xb).fit(disp=False)
-            b0, b1 = mb.params
-            w_b = (logit(X_target) - b0) / b1
-            w_star_boot.append(w_b)
-        except:
-            continue
-
-    ci_lower, ci_upper = np.percentile(w_star_boot, [2.5, 97.5])
-
-    # --- Row 1: Plot and Results ---
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        work_range = np.linspace(filtered_df["Workload"].min(), filtered_df["Workload"].max(), 200)
-        p_pred = 1 / (1 + np.exp(-(beta0_hat + beta1_hat * work_range)))
-
-        fig, ax = plt.subplots(figsize=(fig_width, fig_height))
-        ax.scatter(filtered_df["Workload"], filtered_df["Injury"],
-                   alpha=0.4, s=40, color="#1f77b4", label="Observed Data", edgecolor="w")
-        ax.plot(work_range, p_pred, color="#d62728", linewidth=2, label="Predicted Probability")
-        ax.fill_between(work_range, 0, p_pred, color="#d62728", alpha=0.1)
-        ax.axvline(w_star, color="#2ca02c", linestyle="--", linewidth=2,
-                   label=f"Optimal Workload (w*) = {w_star:.2f}")
-        ax.scatter(w_star, np.interp(w_star, work_range, p_pred), color="#2ca02c", s=80, zorder=5)
-        ax.set_xlabel("Workload (Kg)", fontsize=font_size+2, weight='bold')
-        ax.set_ylabel("Injury Probability", fontsize=font_size+2, weight='bold')
-        ax.tick_params(axis='x', labelsize=font_size)
-        ax.tick_params(axis='y', labelsize=font_size)
-        ax.grid(alpha=0.3, linestyle='--')
-        ax.legend(fontsize=font_size, frameon=True, facecolor='white', edgecolor='black')
-        fig.tight_layout()
-        st.pyplot(fig)
-
-    with col2:
-        st.subheader("📋 Results")
-        st.markdown(f"**Workload threshold (Kg)**: {w_star:.2f}")
-        st.markdown(f"**95% CI**: [{ci_lower:.2f}, {ci_upper:.2f}]")
-        st.markdown("---")
-        st.markdown(
-            f"For an injury probability of **{prob_target_percent}%**, "
-            f"the estimated workload threshold for **{selected_gender if selected_gender != 'All' else 'all genders'}** "
-            f"and **{selected_sport if selected_sport != 'All' else 'all sports'}** athletes is **{w_star:.2f} Kg**."
-        )
-
-    st.markdown("---")
-
-    # --- Dataset Preview & Filters + Plots ---
-    with st.expander("🧮 Show Raw Athlete Data"):
-        st.markdown("### Filter Dataset")
-        gender_options_injury = ["All"] + df_injury["Gender"].unique().tolist()
-        selected_gender_injury = st.selectbox("Gender", gender_options_injury, key="gender_injury")
-
-        sport_options_injury = ["All"] + df_injury["Sport"].unique().tolist()
-        selected_sport_injury = st.selectbox("Sport", sport_options_injury, key="sport_injury")
-
-        # Apply filters
-        filtered_injury_df = df_injury.copy()
-        if selected_gender_injury != "All":
-            filtered_injury_df = filtered_injury_df[filtered_injury_df["Gender"] == selected_gender_injury]
-        if selected_sport_injury != "All":
-            filtered_injury_df = filtered_injury_df[filtered_injury_df["Sport"] == selected_sport_injury]
-
-        # Show filtered table
-        st.dataframe(filtered_injury_df)
-
-        # Create age groups
-        filtered_injury_df["AgeGroup"] = pd.cut(
-            filtered_injury_df["Age"], 
-            bins=[15, 20, 25, 30, 35, 40], 
-            labels=["16-20","21-25","26-30","31-35","36-40"]
-        )
-
-        # ---- Row 1 ----
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.markdown("### 📊 Injury Rate Across Age Groups")
-            age_rate = filtered_injury_df.groupby("AgeGroup")["Injury"].mean().reset_index()
-            fig_age, ax_age = plt.subplots(figsize=(4.5, 3))
-            sns.barplot(x="AgeGroup", y="Injury", data=age_rate, color="#d62728", ax=ax_age)
-            ax_age.set_ylabel("Injury Rate")
-            ax_age.set_xlabel("Age Group")
-            ax_age.tick_params(axis='x', rotation=45)
-            fig_age.tight_layout()
-            st.pyplot(fig_age)
-
-        with col2:
-            st.markdown("### 🏅 Injury Rate by Sport")
-            sport_rate = filtered_injury_df.groupby("Sport")["Injury"].mean().reset_index()
-            fig_sport, ax_sport = plt.subplots(figsize=(4.5, 3))
-            sns.barplot(x="Sport", y="Injury", data=sport_rate, palette="Set2", ax=ax_sport)
-            ax_sport.set_ylabel("Injury Rate")
-            ax_sport.set_xlabel("Sport")
-            ax_sport.tick_params(axis='x', rotation=45)
-            fig_sport.tight_layout()
-            st.pyplot(fig_sport)
-
-        # ---- Row 2 ----
-        col3, col4 = st.columns(2)
-
-        with col3:
-            st.markdown("### ⚡ Workload Distribution by Injury Status")
-            filtered_injury_df["Injury_str"] = filtered_injury_df["Injury"].map({0: "No", 1: "Yes"})
-            fig_workload, ax_workload = plt.subplots(figsize=(4.5, 3))
-            sns.boxplot(
-                x="Injury_str",
-                y="Workload",
-                data=filtered_injury_df,
-                palette={"No": "#1f77b4", "Yes": "#d62728"},
-                ax=ax_workload
-            )
-            ax_workload.set_xlabel("Injury")
-            ax_workload.set_ylabel("Workload")
-            fig_workload.tight_layout()
-            st.pyplot(fig_workload)
-
-        with col4:
-            st.markdown("### 🔥 Injury Heatmap: Age × Sport")
-            heatmap_data = filtered_injury_df.pivot_table(
-                index="AgeGroup", columns="Sport", values="Injury", aggfunc="mean"
-            )
-            fig_heat, ax_heat = plt.subplots(figsize=(4.5, 3))
-            sns.heatmap(heatmap_data, annot=False, fmt=".2f", cmap="Reds", linewidths=0.5, ax=ax_heat)
-            ax_heat.set_ylabel("Age Group")
-            ax_heat.set_xlabel("Sport")
-            ax_heat.set_yticklabels(ax_heat.get_yticklabels(), rotation=45)
-            fig_heat.tight_layout()
-            st.pyplot(fig_heat)
+    st.markdown("""
+    **Interpretation:**
+    - 🟩 **Low:** Light or recovery training intensity.  
+    - 🟨 **Moderate:** Normal and sustainable load.  
+    - 🟧 **High:** Fatigue accumulation likely; monitor closely.  
+    - 🟥 **Very High:** Potential overload or injury risk.  
+    """)
 
 # -----------------------------------------------------------
 # --- PERFORMANCE PREDICTION MODEL PAGE ---
@@ -585,148 +528,6 @@ elif page == "Performance Prediction Model":
             st.dataframe(filtered_df, use_container_width=True)
 
 
-
-elif page == "Injury":
-    import pandas as pd
-    import numpy as np
-    import streamlit as st
-
-    st.title("🏃 Individual Training Parameter Risk Analysis")
-    st.markdown("Explore risk zones for Set, Rep, and Load (kg) individually.")
-    st.markdown("---")
-
-    # --- Load dataset ---
-    df_injury = pd.read_excel("All_data.xlsx")
-
-    # --- Data cleaning ---
-    df_injury.columns = df_injury.columns.str.strip()
-    df_injury["Date"] = pd.to_datetime(df_injury["Date"], errors="coerce")
-
-    # Convert numeric columns safely
-    for col in ["Set", "Rep", "Load (kg)"]:
-        if col in df_injury.columns:
-            df_injury[col] = (
-                pd.to_numeric(df_injury[col].astype(str).str.replace(",", "."), errors="coerce")
-                .fillna(1)
-                .round(0)
-            )
-        else:
-            df_injury[col] = 1
-
-    # --- Dynamic Filters ---
-    st.subheader("🔎 Filter Data")
-
-    name_options = ["All"] + sorted(df_injury["Name"].dropna().unique().tolist())
-    selected_name = st.selectbox("Select Name", name_options)
-
-    temp_df = df_injury.copy()
-    if selected_name != "All":
-        temp_df = temp_df[temp_df["Name"] == selected_name]
-
-    area_options = ["All"] + sorted(temp_df["Area"].dropna().unique().tolist())
-    selected_area = st.selectbox("Select Area", area_options)
-
-    temp_df2 = temp_df.copy()
-    if selected_area != "All":
-        temp_df2 = temp_df2[temp_df2["Area"] == selected_area]
-
-    family_options = ["All"] + sorted(temp_df2["Family"].dropna().unique().tolist())
-    selected_family = st.selectbox("Select Family", family_options)
-
-    # --- Apply Filters ---
-    filtered_df = df_injury.copy()
-    if selected_name != "All":
-        filtered_df = filtered_df[filtered_df["Name"] == selected_name]
-    if selected_area != "All":
-        filtered_df = filtered_df[filtered_df["Area"] == selected_area]
-    if selected_family != "All":
-        filtered_df = filtered_df[filtered_df["Family"] == selected_family]
-
-    st.subheader(f"📊 Training Parameter Risk Zones – {selected_area if selected_area != 'All' else 'All Areas'}")
-
-    # --- Function to compute zones (based on max value + 20–40%) ---
-    def compute_zones(series):
-        series = pd.to_numeric(series, errors="coerce").dropna()
-        if series.empty:
-            return pd.Series(["No data"] * len(series)), [0, 0, 0, 0]
-
-        mu = series.mean()
-        max_val = series.max()
-
-        low = max(mu * 0.5, 0)
-        moderate = mu
-        high = max_val * 1.20
-        very_high = max_val * 1.40
-
-        thresholds = [round(low), round(moderate), round(high), round(very_high)]
-        labels = ["Low", "Moderate", "High", "Very High"]
-
-        thresholds = sorted(list(set(thresholds)))
-        while len(thresholds) < 4:
-            thresholds.append(thresholds[-1] + 1)
-
-        try:
-            zone_series = pd.cut(series, bins=[-np.inf] + thresholds + [np.inf], labels=labels)
-        except ValueError:
-            zone_series = pd.Series(["Undefined"] * len(series))
-
-        return zone_series, thresholds
-
-    # --- Compute results for each training parameter ---
-    summary_rows = []
-    for var, colname in [("Set", "Set"), ("Rep", "Rep"), ("Load (kg)", "Load (kg)")]:
-        filtered_df[f"{colname}_Zone"], thr = compute_zones(filtered_df[colname])
-
-        summary = filtered_df[colname].describe().round(0)
-        mean, std, minv, maxv, count = summary["mean"], summary["std"], summary["min"], summary["max"], int(summary["count"])
-
-        summary_rows.append({
-            "Parameter": var,
-            "Observations": count,
-            "Mean": int(mean),
-            "Std Dev": int(std),
-            "Min": int(minv),
-            "Max": int(maxv),
-            "🟩 Low": f"< {thr[0]}",
-            "🟨 Moderate": f"{thr[0]} – {thr[1]}",
-            "🟧 High": f"{thr[1]} – {thr[2]}",
-            "🟥 Very High": f"> {thr[2]}"
-        })
-
-    summary_df = pd.DataFrame(summary_rows)
-
-    # --- Style table with HTML ---
-    def colorize_zone(zone):
-        if "Low" in zone:
-            color = "#d4edda"  # light green
-        elif "Moderate" in zone:
-            color = "#fff3cd"  # light yellow
-        elif "High" in zone:
-            color = "#ffe5b4"  # light orange
-        else:
-            color = "#f8d7da"  # light red
-        return f"background-color: {color}; border-radius: 6px; padding: 4px;"
-
-    styled_html = summary_df.to_html(index=False, escape=False).replace(
-        '🟩 Low', f'<span style="{colorize_zone("Low")}">🟩 Low</span>'
-    ).replace(
-        '🟨 Moderate', f'<span style="{colorize_zone("Moderate")}">🟨 Moderate</span>'
-    ).replace(
-        '🟧 High', f'<span style="{colorize_zone("High")}">🟧 High</span>'
-    ).replace(
-        '🟥 Very High', f'<span style="{colorize_zone("Very High")}">🟥 Very High</span>'
-    )
-
-    st.markdown("### 📈 Risk Threshold Overview")
-    st.markdown(styled_html, unsafe_allow_html=True)
-
-    st.markdown("""
-    **Interpretation:**
-    - 🟩 **Low:** Light or recovery training intensity.  
-    - 🟨 **Moderate:** Normal and sustainable load.  
-    - 🟧 **High:** Fatigue accumulation likely; monitor closely.  
-    - 🟥 **Very High:** Potential overload or injury risk.  
-    """)
 
 
 
