@@ -80,7 +80,25 @@ if page == "Athlete Ability":
     ]
 
     st.markdown("---")
-    st.subheader(f"📊 Filtered Athletes: {len(filtered_df)} records")
+      # --- Display Filtered Results ---
+    st.subheader("📊 Filtered Athlete Dataset")
+    st.write(f"**Total Athletes:** {len(filtered_df)}")
+    st.dataframe(filtered_df, use_container_width=True)
+
+    # --- Optional Summary Section ---
+    st.markdown("### 🧭 Summary Insights")
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.metric("Average Age", f"{filtered_df['Age'].mean():.1f}")
+        if "Gender" in filtered_df.columns:
+            male_ratio = filtered_df["Gender"].eq("Male").mean() * 100
+            st.metric("Male %", f"{male_ratio:.1f}%")
+
+    with col2:
+        if "Sport" in filtered_df.columns:
+            st.metric("Unique Sports", f"{filtered_df['Sport'].nunique()}")
+        st.metric("Total Records", f"{len(filtered_df)}")
 
     # --- Row 1: Average Abilities Bar & Box Plot ---
     col1, col2 = st.columns([1,1])
@@ -142,8 +160,9 @@ if page == "Athlete Ability":
         corr = filtered_df[abilities].corr()
         fig_corr, ax_corr = plt.subplots(figsize=(fig_width, fig_height))
         sns.heatmap(corr, annot=True, cmap="coolwarm", linewidths=0.5, ax=ax_corr, annot_kws={"size": font_size})
-        ax_corr.set_title("🔥 Ability Correlations", fontsize=font_size)
+        ax_corr.set_title("Correlation Between Abilities", fontsize=font_size)
         fig_corr.tight_layout()
+        st.subheader("🔥 Ability Correlations")
         st.pyplot(fig_corr)
 
     st.markdown("---")
